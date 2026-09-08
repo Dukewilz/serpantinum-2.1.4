@@ -8,7 +8,16 @@ Item {
     id: root
 
     property string fontFamily: "Adwaita Mono"
+    // v24 appearance controls.  Values live under theme.* so the existing
+    // Config singleton remains the only persistence path.
+    property int fontWeight: Font.DemiBold
     property int borderRadius: 8
+    property real uiBackgroundOpacity: 0.96
+    property real uiBackgroundBlur: 0.68
+    property bool uiBackgroundUseWallpaper: false
+    property real uiAmbientStrength: 1.0
+    property int wallpaperRevision: 0
+    readonly property string wallpaperSnapshotPath: Caching.getCacheDir("wallpaper") + "/current_wallpaper.png"
     property int clampedBorderRadius: {
         const r = borderRadius;
         return Math.floor(
@@ -50,6 +59,34 @@ Item {
     property var availableFontPaths: ({})
     property var bundledNames: []
     property string activeFontPath: ""
+
+    FileView {
+        id: wallpaperSnapshotWatcher
+        path: root.wallpaperSnapshotPath
+        watchChanges: true
+        onFileChanged: {
+            wallpaperSnapshotWatcher.reload();
+            wallpaperRevisionDebounce.restart();
+        }
+        onLoaded: wallpaperRevisionDebounce.restart()
+    }
+
+    Timer {
+        id: wallpaperRevisionDebounce
+        interval: 60
+        repeat: false
+        onTriggered: root.wallpaperRevision++
+    }
+
+    Connections {
+        target: (typeof Wallpaper !== "undefined") ? Wallpaper : null
+        function onWallpaperChanged() {
+            wallpaperRevisionDebounce.restart();
+        }
+        function onWallpaperRevisionChanged() {
+            root.wallpaperRevision++;
+        }
+    }
 
     onFontFamilyChanged: {
         root.updateActiveFontLoader();
@@ -172,6 +209,28 @@ Item {
         root.updateColors();
     }
 
+    function applyAppearanceConfig(themeConfig) {
+        if (!themeConfig) themeConfig = {};
+        if (themeConfig.fontFamily !== undefined) root.fontFamily = themeConfig.fontFamily;
+        if (themeConfig.fontWeight !== undefined) {
+            root.fontWeight = Math.max(100, Math.min(900, Math.round(themeConfig.fontWeight / 100) * 100));
+        }
+        if (themeConfig.borderRadius !== undefined) root.borderRadius = themeConfig.borderRadius;
+
+        let uiBg = themeConfig.uiBackground || {};
+        let opacityValue = uiBg.opacity !== undefined ? uiBg.opacity : 96;
+        let blurValue = uiBg.blur !== undefined ? uiBg.blur : 68;
+        let ambientValue = uiBg.ambientStrength !== undefined ? uiBg.ambientStrength : 100;
+        root.uiBackgroundOpacity = Math.max(0.35, Math.min(1.0, opacityValue / 100.0));
+        root.uiBackgroundBlur = Math.max(0.0, Math.min(1.0, blurValue / 100.0));
+        root.uiBackgroundUseWallpaper = uiBg.useWallpaper === true;
+        root.uiAmbientStrength = Math.max(0.35, Math.min(2.0, ambientValue / 100.0));
+    }
+
+    function updateAppearance() {
+        root.applyAppearanceConfig(Config.getSetting("theme", {}));
+    }
+
     IpcHandler {
         target: "theme"
 
@@ -215,13 +274,7 @@ Item {
 
     function updateColors() {
         let themeConfig = Config.getSetting("theme", {});
-
-        if (themeConfig.fontFamily !== undefined) {
-            root.fontFamily = themeConfig.fontFamily;
-        }
-        if (themeConfig.borderRadius !== undefined) {
-            root.borderRadius = themeConfig.borderRadius;
-        }
+        root.applyAppearanceConfig(themeConfig);
 
         let customColors = themeConfig.colors || themeConfig.palette || (themeConfig.base !== undefined ? themeConfig : null);
 
@@ -338,8 +391,12 @@ Item {
     }
 
     Component.onCompleted: {
-        root._readInProgress = true;
-        root.updateColors();
         root.updateActiveFontLoader();
+        // Config may still be loading or recovering its last-good copy.  Do
+        // not interpret that short window as an implicit Matugen selection.
+        if (Config.dataReady) {
+            root._readInProgress = true;
+            root.updateColors();
+        }
     }
 }

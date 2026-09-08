@@ -1364,11 +1364,27 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: ThemeBackend.borderRadius
-            color: ThemeBackend.base
+            color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.base, 0.22) : Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             border.color: ThemeBackend.surface0
             border.width: 1
             clip: true
 
+            AmbientBackdrop {
+                anchors.fill: parent
+                z: 0
+                cornerRadius: parent.radius
+                accentColor: window.currentConn ? window.activeColor : ThemeBackend.mauve
+                secondaryColor: window.currentConn ? window.activeGradientSecondary : ThemeBackend.sapphire
+                tertiaryColor: ThemeBackend.teal
+                glyph: window.activeMode === "eth" ? "󰈀" : (window.activeMode === "bt" ? "󰂯" : "󰤨")
+                strength: 0.42
+                active: window.visible
+                animate: window.visible
+            }
+
+            BackdropClip {
+                anchors.fill: parent
+                cornerRadius: parent.radius
             Rectangle {
                 width: parent.width * 0.8; height: width; radius: width / 2
                 x: (parent.width / 2 - width / 2) + Math.cos(window.globalOrbitAngle * 2) * window.s(120)
@@ -1824,7 +1840,9 @@ Item {
                                 }
                             }
 
-                            ColumnLayout {
+                            }
+
+            ColumnLayout {
                                 anchors.centerIn: parent
                                 spacing: window.s(8)
                                 visible: showEthDisconnected

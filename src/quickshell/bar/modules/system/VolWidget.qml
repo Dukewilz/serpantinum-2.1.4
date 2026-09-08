@@ -76,7 +76,7 @@ Rectangle {
             cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
             horizontalPadding: barWindow ? barWindow.s(volWidgetRoot.isCompact ? 10 : 12) : (volWidgetRoot.isCompact ? 10 : 12)
             buttonIcon: volIcon
-            iconFontSize: barWindow ? barWindow.s(volWidgetRoot.isCompact ? 14 : 15) : (volWidgetRoot.isCompact ? 14 : 15)
+            iconFontSize: barWindow ? barWindow.s(volWidgetRoot.isCompact ? 17 : 18) : (volWidgetRoot.isCompact ? 17 : 18)
             buttonText: volPercent
             textFontSize: barWindow ? barWindow.s(volWidgetRoot.isCompact ? 11 : 12) : (volWidgetRoot.isCompact ? 11 : 12)
             acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -92,7 +92,7 @@ Rectangle {
             transform: Translate { y: volPill.initAnimTrigger ? 0 : barWindow.s(15); Behavior on y { NumberAnimation { duration: 620; easing.type: Easing.OutQuint } } }
             Behavior on opacity { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
 
-            onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle volume"])
+            onClicked: PopupController.handleCommand("toggle", "volume", "")
             onRightClicked: if (Audio.defaultSink) Audio.toggleMute(Audio.defaultSink)
 
             property real wheelAccumulator: 0

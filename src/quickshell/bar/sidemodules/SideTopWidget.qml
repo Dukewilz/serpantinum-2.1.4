@@ -41,14 +41,14 @@ Rectangle {
     IconButton {
         id: helpBtn
         anchors.centerIn: parent
-        width: barWindow ? barWindow.s(sideTopRoot.isCompact ? 28 : 30) : (sideTopRoot.isCompact ? 28 : 30)
-        height: barWindow ? barWindow.s(sideTopRoot.isCompact ? 28 : 30) : (sideTopRoot.isCompact ? 28 : 30)
+        width: barWindow ? barWindow.s(sideTopRoot.isCompact ? 32 : 34) : (sideTopRoot.isCompact ? 32 : 34)
+        height: barWindow ? barWindow.s(sideTopRoot.isCompact ? 32 : 34) : (sideTopRoot.isCompact ? 32 : 34)
         cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
         buttonIcon: "󰒓"
-        iconOffsetX: -2
-        iconFontSize: barWindow ? barWindow.s(sideTopRoot.isCompact ? 14 : 15) : (sideTopRoot.isCompact ? 14 : 15)
+        iconOffsetX: 0
+        iconFontSize: barWindow ? barWindow.s(sideTopRoot.isCompact ? 17 : 18) : (sideTopRoot.isCompact ? 17 : 18)
         accentColor: sideTopRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0
         textColor: isHoveredOrHighlighted ? ThemeBackend.text : (sideTopRoot.isCompact ? ThemeBackend.subtext0 : ThemeBackend.overlay2)
-        onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle guide"])
+        onClicked: PopupController.handleCommand("toggle", "guide", "")
     }
 }

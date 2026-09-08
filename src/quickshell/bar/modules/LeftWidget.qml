@@ -64,13 +64,13 @@ Rectangle {
         IconButton {
             id: helpButton
             height: leftLayout.pillHeight
-            width: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 30 : 32) : (leftWidgetRoot.isCompact ? 30 : 32)
+            width: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 34 : 36) : (leftWidgetRoot.isCompact ? 34 : 36)
             visible: true
-            iconOffsetX: -2
+            iconOffsetX: 0
 
             cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
             buttonIcon: "󰒓"
-            iconFontSize: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 14 : 15) : (leftWidgetRoot.isCompact ? 14 : 15)
+            iconFontSize: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 17 : 18) : (leftWidgetRoot.isCompact ? 17 : 18)
             accentColor: leftWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0
             textColor: isHoveredOrHighlighted ? ThemeBackend.text : (leftWidgetRoot.isCompact ? ThemeBackend.subtext0 : ThemeBackend.overlay2)
 
@@ -81,7 +81,7 @@ Rectangle {
             }
             Behavior on opacity { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
 
-            onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle guide"])
+            onClicked: PopupController.handleCommand("toggle", "guide", "")
         }
     }
 }

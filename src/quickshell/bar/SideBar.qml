@@ -462,10 +462,10 @@ Item {
         y: isFill ? 0 : contentWrapper.dynamicMinY
         width: barWindow ? barWindow.barHeight : 40
         height: isFill ? contentWrapper.height : (contentWrapper.dynamicMaxY - contentWrapper.dynamicMinY)
-        color: Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
+        color: Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
         radius: isFill ? 0 : ThemeBackend.borderRadius
         border.width: (isSolid || isFill) ? 0 : 1
-        border.color: (isSolid || isFill) ? "transparent" : Qt.alpha(ThemeBackend.surface0, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
+        border.color: (isSolid || isFill) ? "transparent" : Qt.alpha(ThemeBackend.surface0, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
         visible: (isSolid || isFill) && (barWindow ? !barWindow.positionChanging : true)
         opacity: visible ? 1.0 : 0.0
 
@@ -506,7 +506,7 @@ Item {
         Connections {
             target: contentWrapper.barWindow || null
             function onBarPositionChanged() { topOuterCorner.requestPaint(); }
-            function onBarOpacityChanged() { topOuterCorner.requestPaint(); }
+            function onBarSurfaceOpacityChanged() { topOuterCorner.requestPaint(); }
         }
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -514,7 +514,7 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
-            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0);
+            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0);
             ctx.beginPath();
             if (barWindow && barWindow.barPosition === "right") {
                 ctx.moveTo(width, 0);
@@ -558,7 +558,7 @@ Item {
         Connections {
             target: contentWrapper.barWindow || null
             function onBarPositionChanged() { bottomOuterCorner.requestPaint(); }
-            function onBarOpacityChanged() { bottomOuterCorner.requestPaint(); }
+            function onBarSurfaceOpacityChanged() { bottomOuterCorner.requestPaint(); }
         }
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -566,7 +566,7 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
-            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0);
+            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0);
             ctx.beginPath();
             if (barWindow && barWindow.barPosition === "right") {
                 ctx.moveTo(width, height);
@@ -641,8 +641,8 @@ Item {
             opacity: visible ? 1.0 : 0.0
 
             color: (contentWrapper.isSolid && contentWrapper.distinctPills)
-                ? Qt.alpha(Qt.darker(ThemeBackend.surface0, 1.15), (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
-                : Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
+                ? Qt.alpha(Qt.darker(ThemeBackend.surface0, 1.15), (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
+                : Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
             radius: ThemeBackend.borderRadius
             border.width: 0
 

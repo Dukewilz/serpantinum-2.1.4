@@ -418,8 +418,9 @@ Item {
         window.targetWallName = safeFileName;
         let realFileName = window.getOriginalFileName(safeFileName);
 
-        const transitionTypes = ["fade"];
-        const randomTransition = transitionTypes[Math.floor(Math.random() * transitionTypes.length)];
+        let themeConfig = Config.getSetting("theme", {});
+        let transitionConfig = themeConfig && themeConfig.wallpaperTransition ? themeConfig.wallpaperTransition : {};
+        const randomTransition = isVideo ? "fade" : (transitionConfig.mode === "fade" ? "fade" : "expressive");
 
         if (window.currentFilter === "History") {
             window.reorderHistory();

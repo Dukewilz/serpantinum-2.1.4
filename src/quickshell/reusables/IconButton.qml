@@ -54,6 +54,8 @@ Item {
             anchors.centerIn: parent
             anchors.horizontalCenterOffset: root.iconOffsetX
             anchors.verticalCenterOffset: root.iconOffsetY
+            width: Math.max(root.iconFontSize, implicitWidth)
+            height: Math.max(root.iconFontSize, implicitHeight)
             text: root.buttonIcon
             font.family: "Iosevka Nerd Font"
             font.pixelSize: root.iconFontSize

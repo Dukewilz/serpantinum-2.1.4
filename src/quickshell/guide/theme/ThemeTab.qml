@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import "../../"
 import "../../reusables"
+import "../../reusables" as Reusables
 
 Item {
     id: themeTabRoot
@@ -23,7 +24,18 @@ Item {
 
     property var defaultThemeSettings: {
         "fontFamily": ThemeBackend.fontFamily,
+        "fontWeight": Font.DemiBold,
         "borderRadius": ThemeBackend.borderRadius,
+        "uiBackground": {
+            "opacity": 96,
+            "blur": 68,
+            "useWallpaper": false,
+            "ambientStrength": 100
+        },
+        "wallpaperTransition": {
+            "mode": "expressive",
+            "duration": 950
+        },
         "activePreset": "Matugen",
         "matugen": true,
         "colors": {}
@@ -31,7 +43,14 @@ Item {
 
     property var themeSettings: Config.getSetting("theme", defaultThemeSettings)
     property string currentFontFamily: themeSettings.fontFamily !== undefined ? themeSettings.fontFamily : ThemeBackend.fontFamily
+    property int currentFontWeight: themeSettings.fontWeight !== undefined ? themeSettings.fontWeight : Font.DemiBold
     property int currentBorderRadius: themeSettings.borderRadius !== undefined ? themeSettings.borderRadius : ThemeBackend.borderRadius
+    property int currentUiOpacity: themeSettings.uiBackground && themeSettings.uiBackground.opacity !== undefined ? themeSettings.uiBackground.opacity : 96
+    property int currentUiBlur: themeSettings.uiBackground && themeSettings.uiBackground.blur !== undefined ? themeSettings.uiBackground.blur : 68
+    property bool currentUiUseWallpaper: themeSettings.uiBackground ? themeSettings.uiBackground.useWallpaper === true : false
+    property int currentAmbientStrength: themeSettings.uiBackground && themeSettings.uiBackground.ambientStrength !== undefined ? themeSettings.uiBackground.ambientStrength : 100
+    property string currentWallpaperTransitionMode: themeSettings.wallpaperTransition && themeSettings.wallpaperTransition.mode !== undefined ? themeSettings.wallpaperTransition.mode : "expressive"
+    property int currentWallpaperTransitionDuration: themeSettings.wallpaperTransition && themeSettings.wallpaperTransition.duration !== undefined ? themeSettings.wallpaperTransition.duration : 950
     property string currentPreset: themeSettings.activePreset !== undefined ? themeSettings.activePreset : "Matugen"
     property bool useMatugen: themeSettings.matugen !== undefined ? themeSettings.matugen : true
 
@@ -150,6 +169,13 @@ Item {
         onTriggered: {
             themeTabRoot.updateBorderRadiusSetting();
         }
+    }
+
+    Timer {
+        id: appearanceDebounceTimer
+        interval: 180
+        repeat: false
+        onTriggered: themeTabRoot.updateAppearanceSettings()
     }
 
     Timer {
@@ -467,7 +493,16 @@ Item {
         function onSettingsLoaded() {
             let ts = Config.getSetting("theme", themeTabRoot.defaultThemeSettings);
             themeTabRoot.currentFontFamily = ts.fontFamily !== undefined ? ts.fontFamily : ThemeBackend.fontFamily;
+            themeTabRoot.currentFontWeight = ts.fontWeight !== undefined ? ts.fontWeight : Font.DemiBold;
             themeTabRoot.currentBorderRadius = ts.borderRadius !== undefined ? ts.borderRadius : ThemeBackend.borderRadius;
+            let uiBg = ts.uiBackground || {};
+            themeTabRoot.currentUiOpacity = uiBg.opacity !== undefined ? uiBg.opacity : 96;
+            themeTabRoot.currentUiBlur = uiBg.blur !== undefined ? uiBg.blur : 68;
+            themeTabRoot.currentUiUseWallpaper = uiBg.useWallpaper === true;
+            themeTabRoot.currentAmbientStrength = uiBg.ambientStrength !== undefined ? uiBg.ambientStrength : 100;
+            let wallTransition = ts.wallpaperTransition || {};
+            themeTabRoot.currentWallpaperTransitionMode = wallTransition.mode !== undefined ? wallTransition.mode : "expressive";
+            themeTabRoot.currentWallpaperTransitionDuration = wallTransition.duration !== undefined ? wallTransition.duration : 950;
             themeTabRoot.currentPreset = ts.activePreset !== undefined ? ts.activePreset : "Matugen";
             themeTabRoot.useMatugen = ts.matugen !== undefined ? ts.matugen : true;
             themeTabRoot.themeSettings = ts;
@@ -480,17 +515,38 @@ Item {
     }
 
     function updateWallpaperDirSetting() {
+        if (!Config.dataReady) return;
         Config.setSetting("wallpaperDir", themeTabRoot.currentWallpaperDir);
     }
 
     function updateFontSetting() {
-        let current = Config.getSetting("theme", themeTabRoot.defaultThemeSettings);
+        if (!Config.dataReady) return;
+        let current = JSON.parse(JSON.stringify(Config.getSetting("theme", themeTabRoot.defaultThemeSettings)));
         current.fontFamily = themeTabRoot.currentFontFamily;
         Config.setSetting("theme", current);
     }
 
+    function updateAppearanceSettings() {
+        if (!Config.dataReady) return;
+        let current = JSON.parse(JSON.stringify(Config.getSetting("theme", themeTabRoot.defaultThemeSettings)));
+        current.fontWeight = themeTabRoot.currentFontWeight;
+        current.uiBackground = {
+            "opacity": themeTabRoot.currentUiOpacity,
+            "blur": themeTabRoot.currentUiBlur,
+            "useWallpaper": themeTabRoot.currentUiUseWallpaper,
+            "ambientStrength": themeTabRoot.currentAmbientStrength
+        };
+        current.wallpaperTransition = {
+            "mode": themeTabRoot.currentWallpaperTransitionMode,
+            "duration": Math.max(350, Math.min(1800, Math.round(themeTabRoot.currentWallpaperTransitionDuration)))
+        };
+        Config.setSetting("theme", current);
+        ThemeBackend.updateAppearance();
+    }
+
     function updateBorderRadiusSetting() {
-        let current = Config.getSetting("theme", themeTabRoot.defaultThemeSettings);
+        if (!Config.dataReady) return;
+        let current = JSON.parse(JSON.stringify(Config.getSetting("theme", themeTabRoot.defaultThemeSettings)));
         current.borderRadius = themeTabRoot.currentBorderRadius;
         Config.setSetting("theme", current);
         if (typeof ThemeBackend !== "undefined") {
@@ -500,12 +556,13 @@ Item {
 
     function applyPreset(modelData) {
         if (!modelData) return;
+        if (!Config.dataReady) return;
 
         let isMatugen = modelData.isMatugen === true;
         themeTabRoot.currentPreset = modelData.name;
         themeTabRoot.useMatugen = isMatugen;
 
-        let current = Config.getSetting("theme", themeTabRoot.defaultThemeSettings);
+        let current = JSON.parse(JSON.stringify(Config.getSetting("theme", themeTabRoot.defaultThemeSettings)));
         current.activePreset = modelData.name;
         current.matugen = isMatugen;
         if (!isMatugen) {
@@ -1003,7 +1060,7 @@ Item {
 
                     MouseArea {
                         id: wpPathMa
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        Layout.alignment: Qt.AlignLeft
                         implicitWidth: wpPathCol.implicitWidth
                         implicitHeight: wpPathCol.implicitHeight
                         hoverEnabled: true
@@ -1084,7 +1141,7 @@ Item {
                     }
 
                     RowLayout {
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        Layout.alignment: Qt.AlignLeft
                         spacing: rootObj.s(8)
 
                         IconButton {
@@ -1166,7 +1223,7 @@ Item {
                     }
 
                     RowLayout {
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        Layout.alignment: Qt.AlignLeft
                         spacing: rootObj.s(8)
 
                         IconButton {
@@ -1231,6 +1288,153 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
+                implicitHeight: uiBackgroundColumn.implicitHeight + rootObj.s(24)
+                radius: ThemeBackend.borderRadius
+                color: Qt.alpha(ThemeBackend.surface0, 0.4)
+                border.width: 0
+
+                ColumnLayout {
+                    id: uiBackgroundColumn
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: rootObj.s(14)
+                    anchors.rightMargin: rootObj.s(14)
+                    spacing: rootObj.s(10)
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: rootObj.s(2)
+                        Text { text: "System UI background"; font.family: ThemeBackend.fontFamily; font.weight: Font.DemiBold; font.pixelSize: rootObj.s(14); color: ThemeBackend.text }
+                        Text { text: "Rounded acrylic background and wallpaper-aware ambient effects"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10.5); color: ThemeBackend.subtext0 }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: rootObj.s(5)
+                        Text { text: "Use current wallpaper"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.text }
+                        Toggle {
+                            Layout.alignment: Qt.AlignLeft
+                            checked: themeTabRoot.currentUiUseWallpaper
+                            accentColor: ThemeBackend.mauve
+                            baseColor: ThemeBackend.surface1
+                            handleColor: ThemeBackend.crust
+                            handleOffColor: ThemeBackend.text
+                            onToggled: function(c) {
+                                themeTabRoot.currentUiUseWallpaper = c;
+                                themeTabRoot.updateAppearanceSettings();
+                            }
+                        }
+                    }
+
+                    GridLayout {
+                        Layout.alignment: Qt.AlignLeft
+                        columns: 3
+                        columnSpacing: rootObj.s(12)
+                        rowSpacing: rootObj.s(8)
+
+                        ColumnLayout {
+                            Text { text: "Surface opacity"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10.5); color: ThemeBackend.text }
+                            Draggable {
+                                implicitWidth: rootObj.s(180); implicitHeight: rootObj.s(18)
+                                from: 35; to: 100; stepSize: 1; defaultValue: 96
+                                showValueBubble: true; valueFormatter: function(v) { return Math.round(v) + "%" }
+                                value: themeTabRoot.currentUiOpacity
+                                backgroundColor: ThemeBackend.surface1; accentColor: ThemeBackend.mauve; handleColor: ThemeBackend.text; handleBorderColor: ThemeBackend.mantle
+                                onMoved: function(v) { themeTabRoot.currentUiOpacity = Math.round(v); appearanceDebounceTimer.restart(); }
+                                onDragFinished: { appearanceDebounceTimer.stop(); themeTabRoot.updateAppearanceSettings(); }
+                            }
+                        }
+
+                        ColumnLayout {
+                            Text { text: "Gaussian blur"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10.5); color: ThemeBackend.text }
+                            Draggable {
+                                implicitWidth: rootObj.s(180); implicitHeight: rootObj.s(18)
+                                from: 0; to: 100; stepSize: 1; defaultValue: 68
+                                showValueBubble: true; valueFormatter: function(v) { return Math.round(v) + "%" }
+                                value: themeTabRoot.currentUiBlur
+                                backgroundColor: ThemeBackend.surface1; accentColor: ThemeBackend.sapphire; handleColor: ThemeBackend.text; handleBorderColor: ThemeBackend.mantle
+                                onMoved: function(v) { themeTabRoot.currentUiBlur = Math.round(v); appearanceDebounceTimer.restart(); }
+                                onDragFinished: { appearanceDebounceTimer.stop(); themeTabRoot.updateAppearanceSettings(); }
+                            }
+                        }
+
+                        ColumnLayout {
+                            Text { text: "Ambient strength"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10.5); color: ThemeBackend.text }
+                            Draggable {
+                                implicitWidth: rootObj.s(180); implicitHeight: rootObj.s(18)
+                                from: 35; to: 180; stepSize: 1; defaultValue: 100
+                                showValueBubble: true; valueFormatter: function(v) { return Math.round(v) + "%" }
+                                value: themeTabRoot.currentAmbientStrength
+                                backgroundColor: ThemeBackend.surface1; accentColor: ThemeBackend.blue; handleColor: ThemeBackend.text; handleBorderColor: ThemeBackend.mantle
+                                onMoved: function(v) { themeTabRoot.currentAmbientStrength = Math.round(v); appearanceDebounceTimer.restart(); }
+                                onDragFinished: { appearanceDebounceTimer.stop(); themeTabRoot.updateAppearanceSettings(); }
+                            }
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Qt.alpha(ThemeBackend.surface2, 0.28) }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: rootObj.s(12)
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: rootObj.s(2)
+                            Text { text: "Wallpaper transition"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.text }
+                            Text { text: "Expressive uses an outer radial reveal; video wallpapers use Fade"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10); color: ThemeBackend.subtext0 }
+                        }
+
+                        Reusables.Switch {
+                            Layout.alignment: Qt.AlignVCenter
+                            implicitWidth: rootObj.s(220)
+                            implicitHeight: rootObj.s(32)
+                            options: ["Expressive", "Fade"]
+                            currentIndex: themeTabRoot.currentWallpaperTransitionMode === "fade" ? 1 : 0
+                            accentColor: ThemeBackend.mauve
+                            baseColor: ThemeBackend.mantle
+                            textColor: ThemeBackend.subtext0
+                            activeTextColor: ThemeBackend.crust
+                            cornerRadius: ThemeBackend.borderRadius
+                            fontPixelSize: rootObj.s(10.5)
+                            onToggled: function(index) {
+                                themeTabRoot.currentWallpaperTransitionMode = index === 1 ? "fade" : "expressive";
+                                themeTabRoot.updateAppearanceSettings();
+                            }
+                        }
+
+                        NumberSelector {
+                            Layout.alignment: Qt.AlignVCenter
+                            implicitWidth: rootObj.s(170)
+                            implicitHeight: rootObj.s(32)
+                            from: 350
+                            to: 1800
+                            stepSize: 50
+                            decimals: 0
+                            value: themeTabRoot.currentWallpaperTransitionDuration
+                            suffix: " ms"
+                            baseColor: ThemeBackend.mantle
+                            accentColor: ThemeBackend.mauve
+                            buttonColor: ThemeBackend.surface1
+                            buttonTextColor: ThemeBackend.text
+                            textColor: ThemeBackend.text
+                            subTextColor: ThemeBackend.subtext0
+                            borderColor: Qt.alpha(ThemeBackend.surface2, 0.55)
+                            cornerRadius: ThemeBackend.borderRadius
+                            fontFamily: ThemeBackend.fontFamily
+                            fontPixelSize: rootObj.s(11)
+                            onTriggered: {
+                                themeTabRoot.currentWallpaperTransitionDuration = Math.round(value);
+                                themeTabRoot.updateAppearanceSettings();
+                            }
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
                 implicitHeight: rowRadLayout.implicitHeight + rootObj.s(24)
                 radius: ThemeBackend.borderRadius
                 color: Qt.alpha(ThemeBackend.surface0, 0.4)
@@ -1253,7 +1457,7 @@ Item {
                     }
 
                     RowLayout {
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        Layout.alignment: Qt.AlignLeft
                         spacing: rootObj.s(12)
 
                         Draggable {
@@ -1325,7 +1529,7 @@ Item {
 
                         Input {
                             id: themeSearchInput
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            Layout.alignment: Qt.AlignLeft
                             implicitWidth: rootObj.s(180)
                             placeholderText: I18n.t("guide.theme.colors.search")
                             baseColor: ThemeBackend.surface0

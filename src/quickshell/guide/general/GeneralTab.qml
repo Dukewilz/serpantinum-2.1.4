@@ -21,10 +21,10 @@ Item {
 
     onVisibleChanged: {
         if (!visible) {
-            if (langDropdown.isOpen) langDropdown.closePopup();
-            if (avatarDropdown.isOpen) avatarDropdown.closePopup();
-            if (weatherUnitDropdown.isOpen) weatherUnitDropdown.closePopup();
-            locationPopup.close();
+            if (typeof langDropdown !== "undefined" && langDropdown && langDropdown.isOpen) langDropdown.closePopup();
+            if (typeof avatarDropdown !== "undefined" && avatarDropdown && avatarDropdown.isOpen) avatarDropdown.closePopup();
+            if (typeof weatherUnitDropdown !== "undefined" && weatherUnitDropdown && weatherUnitDropdown.isOpen) weatherUnitDropdown.closePopup();
+            if (typeof locationPopup !== "undefined" && locationPopup && typeof locationPopup.close === "function") locationPopup.close();
             isLocEditOpen = false;
         }
     }
@@ -153,170 +153,104 @@ Item {
             spacing: rootObj.s(6)
 
             Rectangle {
+                id: profileBanner
                 Layout.fillWidth: true
-                implicitHeight: rowAvatarLayout.implicitHeight + rootObj.s(24)
+                implicitHeight: rootObj.s(156)
                 radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.width: 0
+                color: Qt.tint(ThemeBackend.surface0, Qt.alpha(ThemeBackend.blue, 0.08))
+                border.color: Qt.alpha(ThemeBackend.text, 0.10)
+                border.width: 1
+                clip: true
+                Layout.bottomMargin: rootObj.s(6)
+
+                Rectangle {
+                    width: rootObj.s(210); height: width; radius: width / 2
+                    x: parent.width - width * 0.55; y: -height * 0.52
+                    color: Qt.alpha(ThemeBackend.mauve, 0.075)
+                }
+                Rectangle {
+                    width: rootObj.s(150); height: width; radius: width / 2
+                    x: parent.width * 0.48; y: parent.height - height * 0.38
+                    color: Qt.alpha(ThemeBackend.sapphire, 0.055)
+                }
 
                 RowLayout {
-                    id: rowAvatarLayout
-                    anchors.left: parent.left
-                    anchors.leftMargin: rootObj.s(14)
-                    anchors.right: parent.right
-                    anchors.rightMargin: rootObj.s(14)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    anchors.fill: parent
+                    anchors.margins: rootObj.s(18)
+                    spacing: rootObj.s(18)
 
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: rootObj.s(2)
-
-                        Text {
-                            text: I18n.t("guide.general.avatar.title") || "Profile picture"
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(13)
-                            color: ThemeBackend.text
-                        }
+                    ImageBox {
+                        Layout.preferredWidth: rootObj.s(116)
+                        Layout.preferredHeight: rootObj.s(116)
+                        Layout.alignment: Qt.AlignVCenter
+                        size: rootObj.s(116)
+                        cornerRadius: rootObj.s(58)
+                        imageRadius: rootObj.s(56)
+                        source: generalTabRoot.currentAvatarSourcePath !== "" ? "file://" + generalTabRoot.currentAvatarSourcePath : ""
+                        backgroundColor: ThemeBackend.surface1
 
                         Text {
-                            text: I18n.t("guide.general.avatar.desc") || "Choose profile picture"
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(11)
+                            anchors.centerIn: parent
+                            visible: generalTabRoot.currentAvatarSourcePath === ""
+                            text: ""
+                            font.family: "Iosevka Nerd Font"
+                            font.pixelSize: rootObj.s(48)
                             color: ThemeBackend.subtext0
                         }
                     }
 
-                    RowLayout {
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        spacing: rootObj.s(12)
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: rootObj.s(3)
 
-                        ColumnLayout {
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        Text {
+                            text: SystemInfo.username !== "" ? SystemInfo.username : "user"
+                            font.family: ThemeBackend.fontFamily
+                            font.weight: Font.Bold
+                            font.pixelSize: rootObj.s(22)
+                            color: ThemeBackend.text
+                        }
+                        Text {
+                            text: "@" + (SystemInfo.hostname !== "" ? SystemInfo.hostname : "localhost")
+                            font.family: ThemeBackend.fontFamily
+                            font.pixelSize: rootObj.s(11)
+                            color: ThemeBackend.subtext0
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                            text: (SystemInfo.osName !== "" ? SystemInfo.osName : "Linux")
+                                + (SystemInfo.kernelVersion !== "" ? "  •  " + SystemInfo.kernelVersion : "")
+                            font.family: ThemeBackend.fontFamily
+                            font.pixelSize: rootObj.s(10.5)
+                            color: ThemeBackend.subtext1
+                        }
+
+                        RowLayout {
+                            Layout.topMargin: rootObj.s(7)
                             spacing: rootObj.s(8)
 
                             ClickButton {
-                                Layout.alignment: Qt.AlignRight
-                                implicitHeight: rootObj.s(32)
-                                buttonText: I18n.t("guide.general.avatar.select")
+                                Layout.preferredHeight: rootObj.s(32)
+                                buttonText: I18n.t("guide.general.avatar.select") || "Change picture"
                                 buttonIcon: "󰉋"
                                 accentColor: ThemeBackend.mauve
                                 textColor: ThemeBackend.crust
                                 cornerRadius: ThemeBackend.borderRadius
-                                horizontalPadding: rootObj.s(14)
-                                iconFontSize: rootObj.s(15)
-                                textFontSize: rootObj.s(11)
+                                horizontalPadding: rootObj.s(13)
+                                iconFontSize: rootObj.s(14)
+                                textFontSize: rootObj.s(10.5)
                                 onTriggered: imagePicker.openPicker(generalTabRoot.currentAvatarSourcePath)
                             }
 
-                            Dropdown {
-                                id: avatarDropdown
-                                Layout.alignment: Qt.AlignRight
-                                implicitWidth: rootObj.s(280)
-                                implicitHeight: rootObj.s(32)
-                                options: generalTabRoot.currentAvatarSourcePath !== "" ? [generalTabRoot.currentAvatarSourcePath] : []
-                                currentIndex: 0
-                                isPathSelector: true
-                                fuzzySearch: true
-                                placeholderText: generalTabRoot.currentAvatarSourcePath !== "" ? generalTabRoot.currentAvatarSourcePath : "Select image path..."
-                                fontFamily: ThemeBackend.fontFamily
-                                accentColor: ThemeBackend.mauve
-                                baseColor: ThemeBackend.surface0
-                                hoverColor: ThemeBackend.surface1
-                                dropdownColor: ThemeBackend.surface0
-                                borderColor: Qt.alpha(ThemeBackend.surface2, 0.6)
-                                textColor: ThemeBackend.text
-                                activeTextColor: ThemeBackend.crust
-                                cornerRadius: ThemeBackend.borderRadius
-                                fontPixelSize: rootObj.s(11)
-                                onValueChanged: function(index, value) {
-                                    let gs = Object.assign({}, generalTabRoot.generalSettings);
-                                    gs.avatarPath = value;
-                                    generalTabRoot.generalSettings = gs;
-                                    generalTabRoot.updateGeneralSettings();
-                                }
-                                onSelected: function(index, value) {
-                                    let gs = Object.assign({}, generalTabRoot.generalSettings);
-                                    gs.avatarPath = value;
-                                    generalTabRoot.generalSettings = gs;
-                                    generalTabRoot.updateGeneralSettings();
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            id: avatarPreviewRect
-                            Layout.preferredWidth: rootObj.s(72)
-                            Layout.preferredHeight: rootObj.s(72)
-                            radius: ThemeBackend.borderRadius
-                            color: ThemeBackend.surface0
-                            border.color: Qt.alpha(ThemeBackend.surface2, 0.6)
-                            border.width: 1
-
-                            Rectangle {
-                                id: maskRect
-                                anchors.fill: parent
-                                radius: ThemeBackend.borderRadius
-                                color: "black"
-                                visible: false
-                                layer.enabled: true
-                            }
-
-                            Canvas {
-                                id: personaCanvas
-                                anchors.fill: parent
-                                visible: generalTabRoot.currentAvatarSourcePath === ""
-                                renderTarget: Canvas.FramebufferObject
-                                renderStrategy: Canvas.Immediate
-
-                                Connections {
-                                    target: ThemeBackend
-                                    function onSurface2Changed() { personaCanvas.requestPaint(); }
-                                    function onSubtext0Changed() { personaCanvas.requestPaint(); }
-                                    function onTextChanged() { personaCanvas.requestPaint(); }
-                                }
-
-                                onPaint: {
-                                    var ctx = getContext("2d");
-                                    ctx.clearRect(0, 0, width, height);
-
-                                    var cx = width / 2;
-                                    var headRadius = width * 0.19;
-                                    var headCenterY = height * 0.36;
-
-                                    ctx.fillStyle = ThemeBackend.surface2;
-
-                                    ctx.beginPath();
-                                    ctx.arc(cx, headCenterY, headRadius, 0, Math.PI * 2);
-                                    ctx.fill();
-
-                                    ctx.beginPath();
-                                    ctx.moveTo(cx - width * 0.32, height * 0.88);
-                                    ctx.bezierCurveTo(cx - width * 0.28, height * 0.58, cx + width * 0.28, height * 0.58, cx + width * 0.32, height * 0.88);
-                                    ctx.bezierCurveTo(cx + width * 0.20, height * 0.94, cx - width * 0.20, height * 0.94, cx - width * 0.32, height * 0.88);
-                                    ctx.closePath();
-                                    ctx.fill();
-                                }
-                            }
-
-                            Loader {
-                                id: avatarLoader
-                                anchors.fill: parent
-                                visible: false
-                                active: generalTabRoot.currentAvatarSourcePath !== ""
-                                sourceComponent: Image {
-                                    source: generalTabRoot.currentAvatarSourcePath !== "" ? "file://" + generalTabRoot.currentAvatarSourcePath : ""
-                                    fillMode: Image.PreserveAspectCrop
-                                    cache: false
-                                }
-                            }
-
-                            MultiEffect {
-                                anchors.fill: parent
-                                source: avatarLoader.item
-                                maskEnabled: true
-                                maskSource: maskRect
-                                visible: generalTabRoot.currentAvatarSourcePath !== ""
+                            Text {
+                                Layout.maximumWidth: rootObj.s(310)
+                                elide: Text.ElideMiddle
+                                text: generalTabRoot.currentAvatarSourcePath !== "" ? generalTabRoot.currentAvatarSourcePath : "No custom picture selected"
+                                font.family: ThemeBackend.fontFamily
+                                font.pixelSize: rootObj.s(9.5)
+                                color: ThemeBackend.subtext0
                             }
                         }
                     }

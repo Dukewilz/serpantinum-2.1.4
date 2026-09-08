@@ -570,7 +570,7 @@ Item {
             id: innerBg
             anchors.fill: parent
             anchors.margins: root.s(3)
-            color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
+            color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.base, 0.22) : Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             radius: ThemeBackend.borderRadius
 
             layer.enabled: true
@@ -578,12 +578,13 @@ Item {
             AmbientBackdrop {
                 anchors.fill: parent
                 z: 0
+                cornerRadius: parent.radius
                 accentColor: ThemeBackend.mauve
                 secondaryColor: ThemeBackend.sapphire
                 tertiaryColor: ThemeBackend.pink
                 glyph: "󰎆"
                 strength: 0.68
-                active: StackView.status === StackView.Active
+                active: root.visible
                 animate: root.visible
             }
 

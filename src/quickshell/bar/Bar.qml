@@ -14,7 +14,7 @@ Variants {
     delegate: Component {
         PanelWindow {
             id: barWindow
-            visible: barConfigReady && !shouldHideForRedact
+            visible: (barConfigReady || Config.loadFailed) && !shouldHideForRedact
 
             property bool pendingReload: false
             property bool startupFilesReady: false
@@ -95,23 +95,31 @@ Variants {
 
             property bool barConfigReady: {
                 let dummy = configRevision;
-                if (typeof Config === "undefined") return true;
-                if (Config.dataReady !== undefined) return Config.dataReady;
-                return true;
+                return typeof Config !== "undefined" && Config.dataReady && Config.rawSettings;
             }
 
             property bool autohide: {
                 let dummy = configRevision;
-                return (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar && Config.rawSettings.bar.autohide !== undefined) ? Config.rawSettings.bar.autohide : false;
+                return (barConfigReady && Config.rawSettings.bar && Config.rawSettings.bar.autohide !== undefined)
+                    ? Boolean(Config.rawSettings.bar.autohide) : false;
             }
             property int autohideTimeout: {
                 let dummy = configRevision;
                 return (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar && Config.rawSettings.bar.autohideTimeout !== undefined) ? Config.rawSettings.bar.autohideTimeout : 1000;
             }
-            property real barOpacity: {
+            property real barSurfaceOpacity: {
                 let dummy = configRevision;
                 return (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar && Config.rawSettings.bar.opacity !== undefined) ? (Config.rawSettings.bar.opacity / 100.0) : 1.0;
             }
+            property real barContentOpacity: {
+                let dummy = configRevision;
+                return (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar && Config.rawSettings.bar.contentOpacity !== undefined) ? (Config.rawSettings.bar.contentOpacity / 100.0) : 1.0;
+            }
+            property real barBlur: {
+                let dummy = configRevision;
+                return (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar && Config.rawSettings.bar.blur !== undefined) ? (Config.rawSettings.bar.blur / 100.0) : 0.0;
+            }
+            property real barOpacity: barContentOpacity
 
             HoverHandler {
                 id: barHover
@@ -156,11 +164,11 @@ Variants {
                     barWindow.isRedacting = (active === "true" || active === "1");
                 }
                 function forceReload() {
-                    Quickshell.reload(true)
+                    Config.requestReload()
                 }
                 function queueReload() {
                     if (!barWindow.isNotifOpen && !barWindow.isSysOpen) {
-                        Quickshell.reload(true)
+                        Config.requestReload()
                     } else {
                         barWindow.pendingReload = true
                     }
@@ -240,8 +248,12 @@ Variants {
                 return Math.round(Scaler.s(val));
             }
 
-            property int barHeight: s(40)
-            property real cornerRadius: s(12)
+            readonly property var innerPillSettings: (barConfigReady && Config.rawSettings.bar && Config.rawSettings.bar.innerPill)
+                ? Config.rawSettings.bar.innerPill : ({"enabled": true, "minimumHeight": 46, "outerRadius": 16})
+            property int barHeight: s((!isVertical && isSolid && innerPillSettings.enabled !== false)
+                ? Math.max(42, Math.min(58, innerPillSettings.minimumHeight || 46)) : 40)
+            property real cornerRadius: s((!isVertical && isSolid && innerPillSettings.enabled !== false)
+                ? Math.max(8, Math.min(24, innerPillSettings.outerRadius || 16)) : 12)
 
             property real baseOffsetY: {
                 if (barPosition === "bottom") {
@@ -302,7 +314,7 @@ Variants {
             onActiveWidgetChanged: {
                 if (!barWindow.isNotifOpen && !barWindow.isSysOpen && barWindow.pendingReload) {
                     barWindow.pendingReload = false;
-                    Quickshell.reload(true);
+                    Config.requestReload();
                 }
             }
 

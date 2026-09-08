@@ -47,7 +47,7 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         onClicked: {
             if (Caching.serpantinumDir) {
-                Quickshell.execDetached(["bash", Caching.serpantinumDir + "/scripts/qs_manager.sh", "toggle", "calendar"]);
+                PopupController.handleCommand("toggle", "calendar", "");
             }
         }
     }

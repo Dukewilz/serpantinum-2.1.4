@@ -154,7 +154,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: ThemeBackend.borderRadius
-            color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
+            color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.base, 0.22) : Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             border.color: ThemeBackend.surface0
             border.width: 1
             clip: true
@@ -162,15 +162,19 @@ Item {
             AmbientBackdrop {
                 anchors.fill: parent
                 z: 0
+                cornerRadius: parent.radius
                 accentColor: window.tabColor
                 secondaryColor: ThemeBackend.mauve
                 tertiaryColor: ThemeBackend.sapphire
                 glyph: "󰕾"
                 strength: 0.34
-                active: StackView.status === StackView.Active
+                active: window.visible
                 animate: window.visible
             }
 
+            BackdropClip {
+                anchors.fill: parent
+                cornerRadius: parent.radius
             Rectangle {
                 width: parent.width * 0.8; height: width; radius: width / 2
                 x: (parent.width / 2 - width / 2) + Math.cos(window.globalOrbitAngle * 2) * window.s(120)
@@ -186,6 +190,8 @@ Item {
                 opacity: 0.04
                 color: Qt.lighter(window.tabColor, 1.3)
                 Behavior on color { ColorAnimation { duration: 800 } }
+            }
+
             }
 
             ColumnLayout {

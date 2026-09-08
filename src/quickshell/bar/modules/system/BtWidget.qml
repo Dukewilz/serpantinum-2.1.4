@@ -187,7 +187,7 @@ Rectangle {
             cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
             horizontalPadding: barWindow ? barWindow.s(btWidgetRoot.isCompact ? 10 : 12) : (btWidgetRoot.isCompact ? 10 : 12)
             buttonIcon: btIcon
-            iconFontSize: barWindow ? barWindow.s(btWidgetRoot.isCompact ? 14 : 15) : (btWidgetRoot.isCompact ? 14 : 15)
+            iconFontSize: barWindow ? barWindow.s(btWidgetRoot.isCompact ? 17 : 18) : (btWidgetRoot.isCompact ? 17 : 18)
             buttonText: btDevice
             textFontSize: barWindow ? barWindow.s(btWidgetRoot.isCompact ? 11 : 12) : (btWidgetRoot.isCompact ? 11 : 12)
             accentColor: isActive ? (btWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.mauve, 1.08) : ThemeBackend.mauve) : (btWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0)
@@ -202,7 +202,7 @@ Rectangle {
             transform: Translate { y: btPill.initAnimTrigger ? 0 : barWindow.s(15); Behavior on y { NumberAnimation { duration: 620; easing.type: Easing.OutQuint } } }
             Behavior on opacity { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
 
-            onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle network bt"])
+            onClicked: PopupController.handleCommand("toggle", "network", "bt")
         }
     }
 }

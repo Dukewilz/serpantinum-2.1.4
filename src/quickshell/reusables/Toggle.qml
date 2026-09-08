@@ -46,6 +46,11 @@ Item {
             text: root.buttonIcon
             font.family: "Iosevka Nerd Font"
             font.pixelSize: root.iconFontSize
+                Layout.minimumWidth: root.iconFontSize
+                Layout.preferredWidth: root.iconFontSize
+                Layout.minimumHeight: root.iconFontSize
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
             color: root.textColor
             Layout.alignment: Qt.AlignVCenter
         }

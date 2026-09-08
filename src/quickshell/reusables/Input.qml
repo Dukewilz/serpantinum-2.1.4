@@ -36,7 +36,8 @@ Item {
 
     property int horizontalAlignment: TextInput.AlignLeft
     property int charSlotWidth: -1
-    property int charSpacing: 1
+    property int charSpacing: 0
+    property bool nativeTextRendering: !masked
     property alias symbolSpacing: root.charSpacing
     readonly property real charSlotStep: (root.charSlotWidth > 0 ? root.charSlotWidth : globalCharMetrics.width) + root.charSpacing
     property real scrollOffset: 0
@@ -52,7 +53,6 @@ Item {
     property string trailingIcon: ""
     property bool showClearButton: false
 
-    property bool enabled: true
     property bool hasError: false
     property bool isBusy: false
     readonly property bool hasFocus: innerInput.activeFocus
@@ -174,6 +174,10 @@ Item {
     }
 
     function syncModel() {
+        if (root.nativeTextRendering) {
+            if (charModel.count) charModel.clear();
+            return;
+        }
         let str = innerInput.text;
         let oldCount = charModel.count;
         let newCount = str.length;
@@ -308,6 +312,7 @@ Item {
 
             Rectangle {
                 id: selectionHighlight
+                visible: !root.nativeTextRendering
                 readonly property int selMin: Math.min(innerInput.selectionStart, innerInput.selectionEnd)
                 readonly property int selMax: Math.max(innerInput.selectionStart, innerInput.selectionEnd)
                 readonly property bool hasSelection: selMax > selMin
@@ -328,6 +333,7 @@ Item {
 
             ListView {
                 id: charRow
+                visible: !root.nativeTextRendering
                 height: parent.height
                 anchors.verticalCenter: parent.verticalCenter
                 orientation: ListView.Horizontal
@@ -407,14 +413,14 @@ Item {
                 width: 2
                 height: root.fontPixelSize * 1.2
                 color: root.caretColor
-                visible: root.showCaret && (root.hasFocus || root.action_highlight)
+                visible: !root.nativeTextRendering && root.showCaret && (root.hasFocus || root.action_highlight)
                 anchors.verticalCenter: parent.verticalCenter
                 x: root.scrollOffset + (innerInput.cursorPosition * root.charSlotStep)
 
                 Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutQuad } }
 
                 SequentialAnimation on opacity {
-                    running: root.showCaret && (root.hasFocus || root.action_highlight) && root.isWidgetVisible
+                    running: !root.nativeTextRendering && root.showCaret && (root.hasFocus || root.action_highlight) && root.isWidgetVisible
                     loops: Animation.Infinite
                     NumberAnimation { to: 0; duration: 100; easing.type: Easing.InQuad }
                     PauseAnimation { duration: 400 }
@@ -426,15 +432,20 @@ Item {
             TextInput {
                 id: innerInput
                 anchors.fill: parent
-                opacity: 0
-                color: "transparent"
-                selectionColor: "transparent"
-                selectedTextColor: "transparent"
+                opacity: root.nativeTextRendering ? 1 : 0
+                color: root.nativeTextRendering ? root.textColor : "transparent"
+                selectionColor: root.nativeTextRendering ? Qt.alpha(root.activeSignalColor, 0.42) : "transparent"
+                selectedTextColor: root.nativeTextRendering ? root.textColor : "transparent"
                 selectByMouse: true
                 mouseSelectionMode: TextInput.SelectCharacters
                 horizontalAlignment: root.horizontalAlignment
+                verticalAlignment: TextInput.AlignVCenter
                 font.family: root.fontFamily
                 font.pixelSize: root.fontPixelSize
+                font.letterSpacing: 0
+                font.preferShaping: true
+                renderType: Text.QtRendering
+                echoMode: root.masked ? TextInput.Password : TextInput.Normal
                 enabled: root.enabled && !root.isBusy
                 maximumLength: root.maximumLength > 0 ? root.maximumLength : 32767
                 validator: root.validator

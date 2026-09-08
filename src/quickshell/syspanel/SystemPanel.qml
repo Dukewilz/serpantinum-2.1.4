@@ -423,12 +423,26 @@ Item {
     Rectangle {
         id: sidebarPanel
         anchors.fill: parent
-        color: Qt.rgba(ThemeBackend.base.r, ThemeBackend.base.g, ThemeBackend.base.b, 0.97)
+        color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.surface0, 0.22) : Qt.alpha(ThemeBackend.surface0, ThemeBackend.uiBackgroundOpacity)
         radius: Math.min(ThemeBackend.borderRadius, root.s(28))
-        border.width: 0
+        border.width: 1
+        border.color: Qt.alpha(ThemeBackend.text, 0.08)
         clip: true
         opacity: root.introContent
         transform: Translate { x: (root.isLeftAnchored ? -root.s(75) : root.s(75)) * (1.0 - root.introContent) }
+
+        AmbientBackdrop {
+            anchors.fill: parent
+            z: 0
+            cornerRadius: parent.radius
+            accentColor: ThemeBackend.mauve
+            secondaryColor: ThemeBackend.sapphire
+            tertiaryColor: ThemeBackend.teal
+            glyph: "󰍹"
+            strength: 0.80
+            active: root.visible
+            animate: root.visible
+        }
 
         Rectangle {
             anchors.top: parent.top
@@ -513,12 +527,16 @@ Item {
 
                         ClickButton {
                             id: logoutBtn
+                            property bool confirmLogout: false
+                            enabled: root.visible && root.introTop >= 0.99
+                            onVisibleChanged: if (!visible) confirmLogout = false
+                            Timer { interval: 4000; running: logoutBtn.confirmLogout; onTriggered: logoutBtn.confirmLogout = false }
                             Layout.alignment: Qt.AlignTop | Qt.AlignRight
                             Layout.preferredWidth: root.s(92)
                             Layout.preferredHeight: root.s(34)
                             horizontalPadding: root.s(10)
                             cornerRadius: root.s(12)
-                            buttonText: I18n.t("syspanel.user.logout")
+                            buttonText: confirmLogout ? "Confirm?" : I18n.t("syspanel.user.logout")
                             textFontSize: root.s(11)
                             buttonIcon: "󰍃"
                             iconFontSize: root.s(14)
@@ -536,6 +554,8 @@ Item {
                             }
 
                             onTriggered: {
+                                if (!confirmLogout) { confirmLogout = true; return; }
+                                confirmLogout = false;
                                 logoutOpenTimer.start();
                             }
                         }

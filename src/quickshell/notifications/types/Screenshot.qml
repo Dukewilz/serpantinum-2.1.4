@@ -70,7 +70,7 @@ Notification {
                     if (!p || p === "") return "";
                     if (p.startsWith("file://") || p.startsWith("http://") || p.startsWith("https://") || p.startsWith("image://")) return p;
                     if (p.startsWith("/")) return "file://" + p;
-                    return "image://icon/" + p;
+                    return IconResolver.checkedSource(p);
                 }
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true

@@ -18,10 +18,14 @@ Rectangle {
     property bool isCompact: isGrouped || (isSolid && distinctPills)
     property real targetX: 0
     property bool showLayout: !barWindow || barWindow.isStartupReady
-    property int barCount: 16
+    readonly property var cavaSettings: (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar && Config.rawSettings.bar.cava)
+        ? Config.rawSettings.bar.cava : ({"bars": 10, "barWidth": 3, "spacing": 3})
+    property int barCount: Math.max(4, Math.min(24, cavaSettings.bars !== undefined ? cavaSettings.bars : 10))
+    property real configuredBarWidth: Math.max(2, Math.min(6, cavaSettings.barWidth !== undefined ? cavaSettings.barWidth : 3))
+    property real configuredSpacing: Math.max(1, Math.min(6, cavaSettings.spacing !== undefined ? cavaSettings.spacing : 3))
     property bool isVisVisible: moduleActive && showLayout
     property bool isSubscribed: false
-    readonly property bool shouldSubscribe: isVisVisible
+    readonly property bool shouldSubscribe: isVisVisible && MprisController.isPlaying
 
     onShouldSubscribeChanged: updateSubscription()
 
@@ -96,7 +100,7 @@ Rectangle {
     color: isGrouped ? "transparent" : (isSolid ? (distinctPills ? Qt.darker(ThemeBackend.surface0, 1.15) : "transparent") : ThemeBackend.base)
     clip: true
 
-    property real targetWidth: (moduleActive && innerLayout.implicitWidth > 0) ? (innerLayout.implicitWidth + (barWindow ? barWindow.s(isCompact ? 20 : 24) : (isCompact ? 20 : 24))) : 0
+    property real targetWidth: (moduleActive && innerLayout.implicitWidth > 0) ? (innerLayout.implicitWidth + (barWindow ? barWindow.s(isCompact ? 14 : 16) : (isCompact ? 14 : 16))) : 0
     width: targetWidth
     Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutQuint } }
 
@@ -117,12 +121,12 @@ Rectangle {
     Row {
         id: innerLayout
         anchors.centerIn: parent
-        spacing: barWindow ? barWindow.s(visWidgetRoot.isCompact ? 3 : 4) : (visWidgetRoot.isCompact ? 3 : 4)
+        spacing: barWindow ? barWindow.s(visWidgetRoot.configuredSpacing) : visWidgetRoot.configuredSpacing
 
         Repeater {
             model: visWidgetRoot.barCount
             delegate: Rectangle {
-                width: barWindow ? barWindow.s(visWidgetRoot.isCompact ? 4 : 5) : (visWidgetRoot.isCompact ? 4 : 5)
+                width: barWindow ? barWindow.s(visWidgetRoot.configuredBarWidth) : visWidgetRoot.configuredBarWidth
                 property real level: (visWidgetRoot.barLevels && index < visWidgetRoot.barLevels.length) ? visWidgetRoot.barLevels[index] : 0.0
                 property real minH: barWindow ? barWindow.s(visWidgetRoot.isCompact ? 3 : 4) : (visWidgetRoot.isCompact ? 3 : 4)
                 property real maxH: visWidgetRoot.height * 0.65

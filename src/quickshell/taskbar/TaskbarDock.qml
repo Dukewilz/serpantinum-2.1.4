@@ -5,7 +5,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import "../"
 
-// v24 taskbar port for the Serpantinum 2.0.7 single-shell runtime.
+// v24 taskbar port for the Serpantinum 2.1.2 single-shell runtime.
 // The dock is disabled by default and reads only Config's taskbar object.
 Scope {
     id: root
@@ -50,6 +50,19 @@ Scope {
         return (String(client.class || "") + " " + String(client.initialClass || "") + " " + String(client.title || "")).toLowerCase();
     }
 
+    function desktopEntryForClient(client) {
+        return IconResolver.entryFor(client.class) || IconResolver.entryFor(client.initialClass);
+    }
+
+    function iconForClient(client) {
+        let entry = desktopEntryForClient(client);
+        return entry && entry.icon ? String(entry.icon) : "";
+    }
+
+    function resolvedIconSource(iconName) {
+        return IconResolver.source(iconName, iconName);
+    }
+
     function favoriteForClient(client) {
         let key = clientKey(client);
         for (let i = 0; i < favorites.length; ++i) {
@@ -85,7 +98,7 @@ Scope {
                 groups[key] = {
                     key: key,
                     label: client.title || client.class || "Application",
-                    icon: client.initialClass || client.class || "application-x-executable",
+                    icon: iconForClient(client),
                     client: client,
                     count: 1
                 };
@@ -109,14 +122,18 @@ Scope {
     readonly property bool dockHidden: enabled && autoHide && activeWorkspaceHasWindows && !edgeReveal && !dockHover
 
     function focusClient(client) {
-        if (client && client.address)
-            Quickshell.execDetached(["hyprctl", "dispatch", "focuswindow", "address:" + client.address]);
+        if (client && /^0x[0-9a-f]+$/i.test(String(client.address || "")))
+            Quickshell.execDetached(["hyprctl", "dispatch", 'hl.dsp.focus({ window = "address:' + client.address + '" })']);
     }
 
     function focusOrLaunch(favorite) {
         let client = clientFor(favorite);
         if (client && client.address) focusClient(client);
-        else Quickshell.execDetached(["gtk-launch", favorite.desktop]);
+        else {
+            let entry = IconResolver.entryFor(favorite.desktop);
+            if (entry) entry.execute();
+            else console.warn("Pinned application desktop entry unavailable:", favorite.desktop);
+        }
     }
 
     function revealTemporarily() {
@@ -179,7 +196,7 @@ Scope {
     Timer {
         // Avoid spawning two hyprctl JSON processes more than three times per
         // second.  Workspace/app state does not need sub-second polling.
-        interval: 1200
+        interval: 2200
         running: root.enabled
         repeat: true
         triggeredOnStart: true
@@ -206,6 +223,7 @@ Scope {
 
     PanelWindow {
         id: dockWindow
+        mask: Region { item: dockSurface }
         visible: root.enabled
         anchors { bottom: true }
         margins { bottom: root.barPosition === "bottom" ? root.d(62) : root.d(10) }
@@ -280,11 +298,21 @@ Scope {
                         Behavior on y { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
 
                         Image {
+                            id: favoriteIcon
                             anchors.centerIn: parent
                             width: root.d(27); height: root.d(27)
-                            source: Quickshell.iconPath(modelData.icon, "application-x-executable")
+                            source: root.resolvedIconSource(modelData.icon)
+                            visible: source !== "" && status === Image.Ready
                             fillMode: Image.PreserveAspectFit
                             sourceSize: Qt.size(root.d(32), root.d(32))
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            visible: !favoriteIcon.visible
+                            text: "󰣆"
+                            font.family: "Iosevka Nerd Font"
+                            font.pixelSize: root.d(19)
+                            color: ThemeBackend.subtext0
                         }
                         Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -311,11 +339,21 @@ Scope {
                         Behavior on y { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
 
                         Image {
+                            id: runningIcon
                             anchors.centerIn: parent
                             width: root.d(27); height: root.d(27)
-                            source: Quickshell.iconPath(modelData.icon, "application-x-executable")
+                            source: root.resolvedIconSource(modelData.icon)
+                            visible: source !== "" && status === Image.Ready
                             fillMode: Image.PreserveAspectFit
                             sourceSize: Qt.size(root.d(32), root.d(32))
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            visible: !runningIcon.visible
+                            text: "󰣆"
+                            font.family: "Iosevka Nerd Font"
+                            font.pixelSize: root.d(19)
+                            color: ThemeBackend.subtext0
                         }
                         Row {
                             anchors.horizontalCenter: parent.horizontalCenter

@@ -62,6 +62,6 @@ Rectangle {
         iconFontSize: barWindow ? barWindow.s(sideBtRoot.isCompact ? 14 : 15) : (sideBtRoot.isCompact ? 14 : 15)
         accentColor: sideBtRoot.isBtOn ? (sideBtRoot.isCompact ? Qt.lighter(ThemeBackend.mauve, 1.08) : ThemeBackend.mauve) : (sideBtRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0)
         textColor: sideBtRoot.isBtOn ? ThemeBackend.base : (sideBtRoot.isCompact ? Qt.lighter(ThemeBackend.text, 1.05) : ThemeBackend.text)
-        onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle network bt"])
+        onClicked: PopupController.handleCommand("toggle", "network", "bt")
     }
 }

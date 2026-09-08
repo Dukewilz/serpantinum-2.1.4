@@ -42,38 +42,22 @@ Item {
 
     function alpha(color, a) { return Qt.rgba(color.r, color.g, color.b, a); }
 
-    Process {
-        id: appFetcher
-        running: true
-        command: ["bash", "-c", "python3 " + Caching.qsDir + "/applauncher/app_fetcher.py"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    if (this.text && this.text.trim().length > 0) {
-                        let parsed = JSON.parse(this.text);
-                        appModel.clear();
-                        for (let i = 0; i < Math.min(root.maxApps, parsed.length); i++) {
-                            appModel.append(parsed[i]);
-                        }
-                    }
-                } catch(e) {}
-            }
+    readonly property var appEntries: DesktopEntries.applications.values
+    function refreshApps() {
+        appModel.clear();
+        let entries = appEntries || [];
+        for (let i = 0; i < entries.length && appModel.count < root.maxApps; ++i) {
+            let entry = entries[i];
+            if (!entry || entry.noDisplay) continue;
+            appModel.append({name: entry.name, icon: entry.icon || "", desktopId: entry.id});
         }
     }
-
-    ListModel {
-        id: appModel
-    }
-
-    function launchApp(appName, execStr) {
-        let safeName = appName.replace(/[^a-zA-Z0-9_\-\.]/g, "_").toLowerCase();
-        let logDir = Caching.getLogDir("applauncher");
-        let logFile = logDir + "/" + safeName + ".log";
-        let loggedCmd = execStr + " > \"" + logFile + "\" 2>&1";
-
-        Quickshell.execDetached(["python3", Caching.qsDir + "/applauncher/app_fetcher.py", "--log", appName]);
-        Quickshell.execDetached(["bash", "-c", loggedCmd]);
-        Quickshell.execDetached(["bash", Caching.serpantinumDir + "/scripts/qs_manager.sh", "close"]);
+    onAppEntriesChanged: refreshApps()
+    Component.onCompleted: refreshApps()
+    ListModel { id: appModel }
+    function launchApp(desktopId) {
+        let entry = IconResolver.entryFor(desktopId);
+        if (entry) entry.execute();
     }
 
     Item {
@@ -122,12 +106,23 @@ Item {
                         Behavior on scale { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
 
                         Image {
+                            id: dockIcon
                             anchors.fill: parent
-                            source: model.icon ? (model.icon.startsWith("/") ? "file://" + model.icon : "image://icon/" + model.icon) : "image://icon/application-x-executable"
+                            source: IconResolver.source(model.icon, model.desktopId)
+                            visible: source !== "" && status === Image.Ready
                             sourceSize: Qt.size(64, 64)
                             fillMode: Image.PreserveAspectFit
                             smooth: true
                             mipmap: true
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            visible: !dockIcon.visible
+                            text: "󰣆"
+                            font.family: "Iosevka Nerd Font"
+                            font.pixelSize: Math.min(parent.width, parent.height) * 0.55
+                            color: ThemeBackend.subtext0
                         }
                     }
 
@@ -136,7 +131,7 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: root.launchApp(model.name, model.exec)
+                        onClicked: root.launchApp(model.desktopId)
                     }
                 }
             }

@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-Item {
+QtObject {
     id: root
 
     signal geometryChanged(string monitor, string widgetId, real x, real y, real w, real h, real opacity, real rotation)

@@ -22,8 +22,9 @@ Notification {
                 source: {
                     let ic = model ? (model.icon || model.iconPath || "") : "";
                     if (!ic) return "";
+                    if (ic.startsWith("image://icon/")) return Quickshell.iconPath(ic.substring(13), true);
                     if (ic.startsWith("file://") || ic.startsWith("image://") || ic.startsWith("http://") || ic.startsWith("https://")) return ic;
-                    return ic.startsWith("/") ? "file://" + ic : "image://icon/" + ic;
+                    return ic.startsWith("/") ? "file://" + ic : Quickshell.iconPath(ic, true);
                 }
                 sourceSize: Qt.size(48, 48)
                 fillMode: Image.PreserveAspectFit
@@ -36,7 +37,7 @@ Notification {
 		anchors.verticalCenterOffset: -1
                 visible: !notifIcon.visible
                 text: "󰋽"
-                font.family: ThemeBackend.fontFamily
+                font.family: "Iosevka Nerd Font"
                 font.pixelSize: s(22)
                 color: ThemeBackend.subtext0
             }

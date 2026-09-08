@@ -75,7 +75,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             onClicked: {
                 if (Caching.serpantinumDir) {
-                    Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle applauncher"])
+                    PopupController.handleCommand("toggle", "launcher", "")
                 }
             }
         }
@@ -156,7 +156,7 @@ Rectangle {
         z: -1
         onClicked: {
             if (Caching.serpantinumDir) {
-                Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle applauncher"])
+                PopupController.handleCommand("toggle", "launcher", "")
             }
         }
     }

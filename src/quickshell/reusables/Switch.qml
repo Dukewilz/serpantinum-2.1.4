@@ -20,7 +20,6 @@ Item {
     property int smallRadius: 2
     property int fontPixelSize: 11
     property int minFontPixelSize: 7
-    property bool enabled: true
     property string switchSound: "reusables/switch/sfx.wav"
 
     signal valueChanged(int index, string value)
@@ -115,20 +114,36 @@ Item {
                         Behavior on color { ColorAnimation { duration: 200 } }
                     }
 
-                    Text {
-                        anchors.fill: parent
-                        anchors.leftMargin: 4
-                        anchors.rightMargin: 4
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        text: optionItem.modelData
-                        font.family: ThemeBackend.fontFamily
-                        font.weight: Font.Normal
-                        font.pixelSize: root.fontPixelSize
-                        fontSizeMode: Text.Fit
-                        minimumPixelSize: root.minFontPixelSize
-                        color: root.currentIndex === optionItem.index ? root.activeTextColor : root.textColor
-                        Behavior on color { ColorAnimation { duration: 200 } }
+                    readonly property bool hasIcon: optionItem.modelData.length > 0 && optionItem.modelData.charCodeAt(0) >= 0xE000
+                    readonly property string iconPart: hasIcon ? optionItem.modelData.charAt(0) : ""
+                    readonly property string textPart: hasIcon ? optionItem.modelData.slice(1).trim() : optionItem.modelData
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Text {
+                            visible: optionItem.hasIcon
+                            text: optionItem.iconPart
+                            font.family: "Iosevka Nerd Font"
+                            font.pixelSize: root.fontPixelSize + 2
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            color: root.currentIndex === optionItem.index ? root.activeTextColor : root.textColor
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                        }
+
+                        Text {
+                            visible: optionItem.textPart !== ""
+                            text: optionItem.textPart
+                            font.family: ThemeBackend.fontFamily
+                            font.weight: Font.Normal
+                            font.pixelSize: root.fontPixelSize
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            color: root.currentIndex === optionItem.index ? root.activeTextColor : root.textColor
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                        }
                     }
 
                     MouseArea {

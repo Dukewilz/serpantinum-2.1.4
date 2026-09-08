@@ -345,8 +345,22 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: ThemeBackend.clampedBorderRadius
-            color: ThemeBackend.base
+            color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.base, 0.22) : Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             border.color: ThemeBackend.surface0
+            clip: true
+
+            AmbientBackdrop {
+                anchors.fill: parent
+                z: 0
+                cornerRadius: parent.radius
+                accentColor: root.ambientPurple
+                secondaryColor: root.ambientBlue
+                tertiaryColor: ThemeBackend.teal
+                glyph: "󰒓"
+                strength: 0.72
+                active: root.visible
+                animate: root.visible
+            }
 
             property real time: 0
             NumberAnimation on time {
@@ -492,7 +506,7 @@ Item {
                                                 Text {
                                                     anchors.centerIn: parent
                                                     text: tabData.icon
-                                                    font.family: ThemeBackend.fontFamily
+                                                    font.family: "Iosevka Nerd Font"
                                                     font.pixelSize: root.s(18)
                                                     color: tabHeaderItem.isDirectActive 
                                                         ? ThemeBackend.crust 
@@ -518,7 +532,7 @@ Item {
                                             Text {
                                                 visible: tabGroupItem.hasSubtabs
                                                 text: "󰅀"
-                                                font.family: ThemeBackend.fontFamily
+                                                font.family: "Iosevka Nerd Font"
                                                 font.pixelSize: root.s(14)
                                                 color: tabHeaderItem.isDirectActive 
                                                     ? ThemeBackend.crust 
@@ -630,7 +644,7 @@ Item {
                                                                 Text {
                                                                     anchors.centerIn: parent
                                                                     text: subData.icon || ""
-                                                                    font.family: ThemeBackend.fontFamily
+                                                                    font.family: "Iosevka Nerd Font"
                                                                     font.pixelSize: root.s(15)
                                                                     color: subtabItem.isSubActive ? ThemeBackend.crust : ThemeBackend.subtext0
                                                                     Behavior on color { ColorAnimation { duration: 150 } }

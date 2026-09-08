@@ -691,8 +691,9 @@ Item {
                                                             }
                                                         }
                                                         if (!ic) return "";
+                                                        if (ic.startsWith("image://icon/")) return Quickshell.iconPath(ic.substring(13), true);
                                                         if (ic.startsWith("file://") || ic.startsWith("image://") || ic.startsWith("http://") || ic.startsWith("https://")) return ic;
-                                                        return ic.startsWith("/") ? "file://" + ic : "image://icon/" + ic;
+                                                        return ic.startsWith("/") ? "file://" + ic : Quickshell.iconPath(ic, true);
                                                     }
                                                     sourceSize: Qt.size(48, 48)
                                                     fillMode: Image.PreserveAspectFit
@@ -705,7 +706,7 @@ Item {
                                                     anchors.verticalCenterOffset: -1
                                                     visible: groupWrapper.customType === "default" && !groupHeaderIcon.visible
                                                     text: "󰋽"
-                                                    font.family: ThemeBackend.fontFamily
+                                                    font.family: "Iosevka Nerd Font"
                                                     font.pixelSize: root.s(22)
                                                     color: ThemeBackend.subtext0
                                                 }

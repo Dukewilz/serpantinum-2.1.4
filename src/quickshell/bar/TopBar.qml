@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Controls
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -13,6 +14,71 @@ import "modules"
 Item {
     id: contentWrapper
     property var barWindow
+
+    component AcrylicBarSurface: Item {
+        id: acrylicSurface
+        property real cornerRadius: 0
+        property real surfaceOpacity: (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0
+        property real blurStrength: (barWindow && barWindow.barBlur !== undefined) ? barWindow.barBlur : 0.0
+        readonly property string liveWallpaperPath: {
+            let map = (typeof Wallpaper !== "undefined" && Wallpaper.screenWallpaperPaths) ? Wallpaper.screenWallpaperPaths : {};
+            let keys = Object.keys(map || {});
+            let screen = barWindow ? barWindow.screen : null;
+            let candidate = screen && map[screen.name] ? String(map[screen.name]) : (keys.length > 0 ? String(map[keys[0]] || "") : "");
+            let lower = candidate.toLowerCase();
+            return (lower.endsWith(".mp4") || lower.endsWith(".mkv") || lower.endsWith(".mov") || lower.endsWith(".webm")) ? "" : candidate;
+        }
+        readonly property string wallpaperPath: liveWallpaperPath !== "" ? liveWallpaperPath : ThemeBackend.wallpaperSnapshotPath
+
+        Item {
+            id: acrylicContent
+            anchors.fill: parent
+            visible: false
+            layer.enabled: true
+
+            Image {
+                anchors.fill: parent
+                source: acrylicSurface.blurStrength > 0.01 && acrylicSurface.wallpaperPath !== ""
+                    ? ("file://" + encodeURI(acrylicSurface.wallpaperPath).replace(/#/g, "%23").replace(/\?/g, "%3F") + "?v=" + ThemeBackend.wallpaperRevision) : ""
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: false
+                smooth: true
+                visible: acrylicSurface.blurStrength > 0.01 && status === Image.Ready
+                opacity: Math.min(0.72, acrylicSurface.blurStrength * (1.0 - acrylicSurface.surfaceOpacity * 0.48))
+                layer.enabled: visible
+                layer.effect: MultiEffect {
+                    blurEnabled: true
+                    blurMax: 24
+                    blur: acrylicSurface.blurStrength
+                    autoPaddingEnabled: false
+                }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: acrylicSurface.cornerRadius
+                color: Qt.alpha(ThemeBackend.base, acrylicSurface.surfaceOpacity)
+            }
+        }
+
+        Rectangle {
+            id: acrylicMask
+            anchors.fill: parent
+            radius: Math.max(0, Math.min(acrylicSurface.cornerRadius, Math.min(width, height) / 2))
+            color: "white"
+            visible: false
+            layer.enabled: true
+        }
+
+        MultiEffect {
+            anchors.fill: parent
+            source: acrylicContent
+            maskEnabled: acrylicSurface.cornerRadius > 0
+            maskSource: acrylicMask
+            autoPaddingEnabled: false
+        }
+    }
 
     property string barStyle: {
         if (barWindow && barWindow.barStyle !== undefined) return barWindow.barStyle;
@@ -166,6 +232,42 @@ Item {
             }
         }
         return defs;
+    }
+
+    property var pillDefs: {
+        let defs = [];
+        let all = [contentWrapper.leftArr, contentWrapper.centerArr, contentWrapper.rightArr];
+        for (let i = 0; i < all.length; i++) {
+            for (let j = 0; j < all[i].length; j++) {
+                let entry = all[i][j];
+                defs.push(Array.isArray(entry) ? entry : [entry]);
+            }
+        }
+        return defs;
+    }
+
+    readonly property var innerPillSettings: (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar && Config.rawSettings.bar.innerPill)
+        ? Config.rawSettings.bar.innerPill : ({"enabled": true, "style": "adaptive", "elevationPercent": 8, "borderPercent": 10, "verticalPadding": 5, "innerRadius": 10})
+    readonly property bool innerPillEnabled: innerPillSettings.enabled !== false
+    readonly property real innerPillElevation: Math.max(0, Math.min(12, innerPillSettings.elevationPercent !== undefined ? innerPillSettings.elevationPercent : 8)) / 100.0
+    readonly property real innerPillBorderOpacity: Math.max(0, Math.min(20, innerPillSettings.borderPercent !== undefined ? innerPillSettings.borderPercent : 10)) / 100.0
+    readonly property real innerPillPadding: barWindow ? barWindow.s(Math.max(3, Math.min(9, innerPillSettings.verticalPadding !== undefined ? innerPillSettings.verticalPadding : 5))) : 5
+    readonly property real innerPillRadius: barWindow ? barWindow.s(Math.max(4, Math.min(20, innerPillSettings.innerRadius !== undefined ? innerPillSettings.innerRadius : 10))) : 10
+
+    function innerPillColor() {
+        let style = innerPillSettings.style || "adaptive";
+        let target = ThemeBackend.surface1;
+        let amount = contentWrapper.innerPillElevation;
+        if (style === "caelestia") {
+            target = ThemeBackend.blue;
+            amount = Math.min(0.14, amount + 0.025);
+        } else if (style === "end4") {
+            target = ThemeBackend.mauve;
+            amount = Math.min(0.13, amount + 0.015);
+        } else if (style === "ilyamiro") {
+            target = ThemeBackend.surface2;
+        }
+        return Qt.tint(ThemeBackend.base, Qt.alpha(target, amount));
     }
 
     property bool trayInLeft: flatLeftArr.indexOf("tray") !== -1
@@ -487,12 +589,17 @@ Item {
         width: isFill ? contentWrapper.width : (contentWrapper.dynamicMaxX - contentWrapper.dynamicMinX)
         height: barWindow ? barWindow.barHeight : 0
         y: barWindow ? barWindow.baseOffsetY : 0
-        color: Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
+        color: "transparent"
         radius: isFill ? 0 : ThemeBackend.borderRadius
         border.width: (isSolid || isFill) ? 0 : 1
-        border.color: (isSolid || isFill) ? "transparent" : Qt.alpha(ThemeBackend.surface0, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
+        border.color: (isSolid || isFill) ? "transparent" : Qt.alpha(ThemeBackend.surface0, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
         visible: (isSolid || isFill) && (barWindow ? !barWindow.positionChanging : true)
         opacity: visible ? 1.0 : 0.0
+
+        AcrylicBarSurface {
+            anchors.fill: parent
+            cornerRadius: solidBackground.radius
+        }
 
         Behavior on x {
             enabled: contentWrapper.layoutAnimationsEnabled
@@ -531,7 +638,7 @@ Item {
         Connections {
             target: contentWrapper.barWindow || null
             function onBarPositionChanged() { leftOuterCorner.requestPaint(); }
-            function onBarOpacityChanged() { leftOuterCorner.requestPaint(); }
+            function onBarSurfaceOpacityChanged() { leftOuterCorner.requestPaint(); }
         }
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -539,7 +646,7 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
-            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0);
+            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0);
             ctx.beginPath();
             if (barWindow && barWindow.barPosition === "bottom") {
                 ctx.moveTo(0, height);
@@ -583,7 +690,7 @@ Item {
         Connections {
             target: contentWrapper.barWindow || null
             function onBarPositionChanged() { rightOuterCorner.requestPaint(); }
-            function onBarOpacityChanged() { rightOuterCorner.requestPaint(); }
+            function onBarSurfaceOpacityChanged() { rightOuterCorner.requestPaint(); }
         }
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -591,7 +698,7 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
-            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0);
+            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0);
             ctx.beginPath();
             if (barWindow && barWindow.barPosition === "bottom") {
                 ctx.moveTo(width, height);
@@ -655,11 +762,15 @@ Item {
             visible: metrics.v && (barWindow ? !barWindow.positionChanging : true) && width > 0 && (!contentWrapper.isSolid || contentWrapper.distinctPills)
             opacity: visible ? 1.0 : 0.0
 
-            color: (contentWrapper.isSolid && contentWrapper.distinctPills)
-                ? Qt.alpha(Qt.darker(ThemeBackend.surface0, 1.15), (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
-                : Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
+            color: "transparent"
             radius: ThemeBackend.borderRadius
-            border.width: 0
+            border.width: 1
+            border.color: Qt.alpha(ThemeBackend.surface0, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
+
+            AcrylicBarSurface {
+                anchors.fill: parent
+                cornerRadius: groupBgRect.radius
+            }
 
             Behavior on x {
                 enabled: contentWrapper.layoutAnimationsEnabled
@@ -675,6 +786,51 @@ Item {
                 enabled: barWindow && !barWindow.positionChanging && barWindow.startupCascadeFinished && !contentWrapper.suppressAnimation
                 NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
             }
+        }
+    }
+
+    Repeater {
+        id: innerPillRepeater
+        model: contentWrapper.pillDefs
+
+        delegate: Rectangle {
+            id: innerPillRect
+            z: 0.5
+            property var pillIds: modelData
+
+            function getPillMetrics() {
+                let minX = -1;
+                let maxX = -1;
+                for (let i = 0; i < pillIds.length; i++) {
+                    let widget = contentWrapper.getPositionedWidget(pillIds[i]);
+                    if (!widget || !widget.visible) continue;
+                    let widgetWidth = widget.targetWidth !== undefined ? widget.targetWidth : widget.width;
+                    if (widgetWidth <= 0) continue;
+                    let widgetX = widget.targetX !== undefined ? widget.targetX : widget.x;
+                    if (minX < 0 || widgetX < minX) minX = widgetX;
+                    maxX = Math.max(maxX, widgetX + widgetWidth);
+                }
+                return minX < 0 ? ({"x": 0, "w": 0, "visible": false})
+                                : ({"x": minX, "w": maxX - minX, "visible": true});
+            }
+
+            property var metrics: getPillMetrics()
+            x: metrics.x
+            y: (barWindow ? barWindow.baseOffsetY : 0) + contentWrapper.innerPillPadding
+            width: metrics.w
+            height: Math.max(0, (barWindow ? barWindow.barHeight : 40) - contentWrapper.innerPillPadding * 2)
+            radius: Math.min(height / 2, contentWrapper.innerPillRadius)
+            visible: contentWrapper.innerPillEnabled && contentWrapper.isSolid && metrics.visible && width > 0
+                && (barWindow ? !barWindow.positionChanging : true)
+            opacity: visible ? ((barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0) : 0.0
+            color: contentWrapper.innerPillColor()
+            border.width: contentWrapper.innerPillBorderOpacity > 0 ? 1 : 0
+            border.color: Qt.alpha(ThemeBackend.text, contentWrapper.innerPillBorderOpacity)
+
+            Behavior on x { enabled: contentWrapper.layoutAnimationsEnabled; NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+            Behavior on width { enabled: contentWrapper.layoutAnimationsEnabled; NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+            Behavior on opacity { enabled: contentWrapper.layoutAnimationsEnabled; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: 260 } }
         }
     }
 

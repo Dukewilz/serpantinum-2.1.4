@@ -13,11 +13,7 @@ TARGET="$2"
 SUBTARGET="$3"
 
 send_qs_ipc() {
-    if [[ -n "$MAIN_QML" ]]; then
-        quickshell -p "$MAIN_QML" ipc call main handleCommand "$@" >/dev/null 2>&1
-    else
-        quickshell ipc call main handleCommand "$@" >/dev/null 2>&1
-    fi
+    quickshell -p "$MAIN_QML" ipc call main handleCommand "$@"
 }
 
 log_widget_launch() {
@@ -28,7 +24,6 @@ log_widget_launch() {
     # interpreters on every bar click creates visible input latency on slower
     # systems; application ranking inside Launcher remains unaffected.
     [[ "${SERPANTINUM_WIDGET_RANK_LOG:-0}" == "1" ]] || return
-    source "$SCRIPT_DIR/i18n.sh" 2>/dev/null || true
 
     local rank_script="$SCRIPT_DIR/../quickshell/launcher/app_rank.py"
     [[ -f "$rank_script" ]] || rank_script="$HOME/.config/quickshell/launcher/app_rank.py"
@@ -72,7 +67,7 @@ if [[ "$ACTION" == "workspace" ]]; then
 fi
 
 if [[ "$ACTION" =~ ^[0-9]+$ ]]; then
-    source "$SCRIPT_DIR/config.sh" 2>/dev/null || true
+        source "$SCRIPT_DIR/config.sh" 2>/dev/null || true
     if command -v _config_ensure_settings &>/dev/null; then
         _config_ensure_settings
     fi
@@ -110,7 +105,7 @@ if [[ "$ACTION" =~ ^[0-9]+$ ]]; then
         else
             CMD='hl.dsp.focus({ workspace = "'"$ACTION"'" })'
         fi
-        
+
         hyprctl dispatch "$CMD" >/dev/null 2>&1 &
     fi
 
@@ -215,7 +210,7 @@ handle_wallpaper_prep() {
 }
 
 if [[ "$ACTION" == "close" ]]; then
-    send_qs_ipc "close" "" ""
+    send_qs_ipc "close" "" "" || exit $?
     exit 0
 fi
 
@@ -237,6 +232,6 @@ if [[ "$ACTION" == "open" || "$ACTION" == "toggle" ]]; then
             SUBTARGET=""
             ;;
     esac
-    send_qs_ipc "$ACTION" "$TARGET" "$SUBTARGET"
+    send_qs_ipc "$ACTION" "$TARGET" "$SUBTARGET" || exit $?
     exit 0
 fi

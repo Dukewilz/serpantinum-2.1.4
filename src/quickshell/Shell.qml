@@ -14,7 +14,7 @@ ShellRoot {
     ScreenshotOverlay {}
     Main {}
     Bar {}
-    // TaskbarDock temporarily disabled by 2.1.2 recovery.
+    TaskbarDock {}
     Lock {}
 
     Launcher {}

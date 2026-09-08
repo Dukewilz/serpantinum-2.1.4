@@ -143,33 +143,7 @@ if [ -z "$COMMAND" ]; then
 fi
 
 if [ "$COMMAND" == "stop" ]; then
-    local pid=""
-    if [ -f "/tmp/serpantinumd.pid" ]; then
-        pid="$(cat "/tmp/serpantinumd.pid" 2>/dev/null)"
-    fi
-
-    pkill -TERM -f "focus_daemon.py" 2>/dev/null
-    if [ -n "$MAIN_QML" ]; then
-        pkill -TERM -f "quickshell.*$MAIN_QML" 2>/dev/null
-    fi
-
-    if [ -n "$pid" ] && is_alive "$pid"; then
-        terminate_and_wait "$pid" 2
-    else
-        pkill -TERM -f "serpantinumd" 2>/dev/null
-        sleep 0.2
-        pkill -KILL -f "serpantinumd" 2>/dev/null
-    fi
-
-    pkill -KILL -f "focus_daemon.py" 2>/dev/null
-    if [ -n "$MAIN_QML" ]; then
-        pkill -KILL -f "quickshell.*$MAIN_QML" 2>/dev/null
-    fi
-
-    rm -f "/tmp/serpantinumd.pid" 2>/dev/null
-    rm -f "/tmp/serpantinumd.lock" 2>/dev/null
-    echo "$(t "daemon.cli.stopped")"
-    exit 0
+    exec python3 "$SERPANTINUM_DIR/scripts/v24_process_scope.py"
 fi
 
 if [ "$COMMAND" == "status" ]; then
@@ -197,12 +171,6 @@ if [ "$COMMAND" == "start" ]; then
             echo "$(t "daemon.already_running")"
             exit 1
         fi
-
-        pkill -KILL -f "focus_daemon.py" 2>/dev/null
-        if [ -n "$MAIN_QML" ]; then
-            pkill -KILL -f "quickshell.*$MAIN_QML" 2>/dev/null
-        fi
-        sleep 0.2
 
         if ! flock -n 9; then
             echo "$(t "daemon.already_running")"
@@ -233,18 +201,6 @@ if [ "$COMMAND" == "start" ]; then
         for child in $(get_all_children $$ 2>/dev/null); do
             targets+=("$child")
         done
-
-        local focus_pid
-        for focus_pid in $(pgrep -f "focus_daemon.py" 2>/dev/null); do
-            targets+=("$focus_pid")
-        done
-
-        if [ -n "$MAIN_QML" ]; then
-            local qs_extra
-            for qs_extra in $(pgrep -f "quickshell.*$MAIN_QML" 2>/dev/null); do
-                targets+=("$qs_extra")
-            done
-        fi
 
         local unique_targets=()
         if [ ${#targets[@]} -gt 0 ]; then
@@ -282,7 +238,6 @@ if [ "$COMMAND" == "start" ]; then
 
         exec 9>&- 2>/dev/null
         rm -f "/tmp/serpantinumd.pid" 2>/dev/null
-        rm -f "/tmp/serpantinumd.lock" 2>/dev/null
         exit 0
     }
 
