@@ -86,10 +86,24 @@ LAST_DISK_TIME=0
 if [ -f "$DISK_FILE" ] && [ $((NOW - LAST_DISK_TIME)) -lt 60 ]; then
     read -r DISK_PCT DISK_USED_GB DISK_TOTAL_GB < "$DISK_FILE"
 else
-    read -r d_total d_used d_pct <<< "$(df -k / 2>/dev/null | awk 'NR==2 {print $2, $3, $5}' | tr -d '%')"
-    DISK_PCT=${d_pct:-0}
-    DISK_USED_GB=$(awk "BEGIN {printf \"%.1f\", ${d_used:-0} / 1024 / 1024}")
-    DISK_TOTAL_GB=$(awk "BEGIN {printf \"%.1f\", ${d_total:-0} / 1024 / 1024}")
+    read -r DISK_PCT DISK_USED_GB DISK_TOTAL_GB <<< "$(df -Plk -x tmpfs -x devtmpfs -x squashfs -x overlay -x efivarfs -x iso9660 2>/dev/null | awk '
+    NR > 1 && $1 !~ /^\/dev\/loop/ && $1 != "udev" && $1 != "none" {
+        if (!seen[$1]++) {
+            total += $2
+            used += $3
+        }
+    }
+    END {
+        if (total > 0) {
+            pct = int((used / total) * 100 + 0.5)
+            printf "%d %.1f %.1f\n", pct, used / 1048576, total / 1048576
+        } else {
+            print "0 0.0 0.0"
+        }
+    }')"
+    DISK_PCT=${DISK_PCT:-0}
+    DISK_USED_GB=${DISK_USED_GB:-0.0}
+    DISK_TOTAL_GB=${DISK_TOTAL_GB:-0.0}
     echo "$DISK_PCT $DISK_USED_GB $DISK_TOTAL_GB" > "$DISK_FILE"
     echo "$NOW" > "$DISK_TIME_FILE"
 fi

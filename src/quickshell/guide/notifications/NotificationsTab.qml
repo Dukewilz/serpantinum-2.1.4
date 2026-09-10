@@ -378,12 +378,29 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: rootObj.s(10)
+                        spacing: rootObj.s(12)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰍹"
+                            iconOffsetX: -2
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: rootObj.s(2)
 
                             Text {
+                                Layout.fillWidth: true
                                 text: I18n.t("guide.notifications.position.title", "Screen position")
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: rootObj.s(13)
@@ -392,15 +409,12 @@ Item {
                             }
 
                             Text {
+                                Layout.fillWidth: true
                                 text: I18n.t("guide.notifications.position.desc", "Select a preset position or drag on screen")
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: rootObj.s(11)
                                 color: ThemeBackend.subtext0
                             }
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
                         }
 
                         RowLayout {
@@ -513,169 +527,182 @@ Item {
                         clip: true
                         visible: implicitHeight > 0
                         opacity: isOpen ? 1.0 : 0.0
-                        implicitHeight: isOpen ? selectorInnerCol.implicitHeight : 0
+                        implicitHeight: isOpen ? selectorBox.implicitHeight : 0
 
                         Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
                         Behavior on implicitHeight { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
 
-                        ColumnLayout {
-                            id: selectorInnerCol
+                        Rectangle {
+                            id: selectorBox
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: rootObj.s(10)
+                            height: implicitHeight
+                            implicitHeight: selectorInnerCol.implicitHeight + rootObj.s(24)
+                            radius: ThemeBackend.borderRadius
+                            color: Qt.alpha(ThemeBackend.surface1, 0.35)
+                            border.width: 0
 
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: rootObj.s(6)
-
-                                ClickButton {
-                                    enabled: false
-                                    Layout.preferredWidth: rootObj.s(140)
-                                    implicitHeight: rootObj.s(26)
-                                    cornerRadius: rootObj.s(6)
-                                    horizontalPadding: rootObj.s(6)
-                                    textFontSize: rootObj.s(11)
-                                    accentColor: ThemeBackend.surface0
-                                    textColor: "#ffffff"
-                                    buttonText: "X: " + notificationsTabRoot.horizontalPosition + "%  Y: " + notificationsTabRoot.verticalPosition + "%"
-                                }
-
-                                IconButton {
-                                    size: rootObj.s(26)
-                                    cornerRadius: rootObj.s(6)
-                                    buttonIcon: "󰕰"
-                                    iconFontSize: rootObj.s(13)
-                                    accentColor: notificationsTabRoot.gridEnabled ? ThemeBackend.mauve : ThemeBackend.surface0
-                                    textColor: notificationsTabRoot.gridEnabled ? ThemeBackend.crust : ThemeBackend.text
-                                    onClicked: {
-                                        notificationsTabRoot.gridEnabled = !notificationsTabRoot.gridEnabled;
-                                    }
-                                }
-
-                                IconButton {
-                                    size: rootObj.s(26)
-                                    cornerRadius: rootObj.s(6)
-                                    buttonIcon: "󰑐"
-                                    iconFontSize: rootObj.s(13)
-                                    accentColor: ThemeBackend.surface0
-                                    textColor: ThemeBackend.text
-                                    onClicked: {
-                                        notificationsTabRoot.applyPosition(notificationsTabRoot.presetRightH, notificationsTabRoot.presetTopV, "top right");
-                                    }
-                                }
-
-                                Item {
-                                    Layout.fillWidth: true
-                                }
+                            ColumnLayout {
+                                id: selectorInnerCol
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.margins: rootObj.s(12)
+                                spacing: rootObj.s(10)
 
                                 RowLayout {
-                                    spacing: rootObj.s(8)
-                                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                    Layout.fillWidth: true
+                                    spacing: rootObj.s(6)
 
-                                    Text {
-                                        text: I18n.t("guide.common.show_bar", "Show bar")
-                                        font.family: ThemeBackend.fontFamily
-                                        font.pixelSize: rootObj.s(11)
-                                        color: ThemeBackend.subtext0
+                                    ClickButton {
+                                        enabled: false
+                                        Layout.preferredWidth: rootObj.s(140)
+                                        implicitHeight: rootObj.s(26)
+                                        cornerRadius: rootObj.s(6)
+                                        horizontalPadding: rootObj.s(6)
+                                        textFontSize: rootObj.s(11)
+                                        accentColor: ThemeBackend.surface1
+                                        textColor: "#ffffff"
+                                        buttonText: "X: " + notificationsTabRoot.horizontalPosition + "%  Y: " + notificationsTabRoot.verticalPosition + "%"
                                     }
 
-                                    Toggle {
-                                        checked: notificationsTabRoot.showBarBox
-                                        accentColor: ThemeBackend.mauve
-                                        baseColor: ThemeBackend.surface1
-                                        handleColor: ThemeBackend.crust
-                                        handleOffColor: ThemeBackend.text
-                                        onToggled: function(c) {
-                                            notificationsTabRoot.showBarBox = c;
+                                    IconButton {
+                                        size: rootObj.s(26)
+                                        cornerRadius: rootObj.s(6)
+                                        buttonIcon: "󰕰"
+                                        iconFontSize: rootObj.s(13)
+                                        accentColor: notificationsTabRoot.gridEnabled ? ThemeBackend.mauve : ThemeBackend.surface1 
+                                        textColor: notificationsTabRoot.gridEnabled ? ThemeBackend.crust : ThemeBackend.text
+                                        onClicked: {
+                                            notificationsTabRoot.gridEnabled = !notificationsTabRoot.gridEnabled;
                                         }
                                     }
-                                }
-                            }
 
-                            ScreenPositionSelector {
-                                id: screenSelector
-                                Layout.fillWidth: true
-                                horizontalPosition: notificationsTabRoot.horizontalPosition
-                                verticalPosition: notificationsTabRoot.verticalPosition
-                                gridEnabled: notificationsTabRoot.gridEnabled
-                                showBar: notificationsTabRoot.showBarBox
-                                marginV: rootObj.s(12)
-                                marginH: rootObj.s(16)
-                                dragWidth: rootObj.s(170)
-                                dragHeight: rootObj.s(48)
+                                    IconButton {
+                                        size: rootObj.s(26)
+                                        cornerRadius: rootObj.s(6)
+                                        buttonIcon: "󰑐"
+                                        iconFontSize: rootObj.s(13)
+                                        accentColor: ThemeBackend.surface1          
+                                        textColor: ThemeBackend.text
+                                        onClicked: {
+                                            notificationsTabRoot.applyPosition(notificationsTabRoot.presetRightH, notificationsTabRoot.presetTopV, "top right");
+                                        }
+                                    }
 
-                                onPositionChanged: (hPos, vPos) => {
-                                    let h = Math.round(hPos);
-                                    let v = Math.round(vPos);
-                                    notificationsTabRoot.horizontalPosition = h;
-                                    notificationsTabRoot.verticalPosition = v;
-                                    let idx = notificationsTabRoot.getPresetIndex(h, v);
-                                    notificationsTabRoot.position = idx !== -1 ? notificationsTabRoot.getPosStringFromIndex(idx) : "custom";
-                                    debounceTimer.restart();
-                                }
-
-                                onDragFinished: {
-                                    debounceTimer.stop();
-                                    let idx = notificationsTabRoot.getPresetIndex(notificationsTabRoot.horizontalPosition, notificationsTabRoot.verticalPosition);
-                                    let posStr = idx !== -1 ? notificationsTabRoot.getPosStringFromIndex(idx) : "custom";
-                                    notificationsTabRoot.position = posStr;
-                                    let current = JSON.parse(JSON.stringify(Config.getSetting("notifications", defaultNotificationSettings) || defaultNotificationSettings));
-                                    current.horizontalPosition = notificationsTabRoot.horizontalPosition;
-                                    current.verticalPosition = notificationsTabRoot.verticalPosition;
-                                    current.position = posStr;
-                                    Config.setSetting("notifications", current);
-                                    notificationsTabRoot.notifSettings = current;
-                                }
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: rootObj.s(8)
-                                    color: ThemeBackend.base
-                                    border.width: 1
-                                    border.color: ThemeBackend.surface0
-                                    clip: true
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
 
                                     RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: rootObj.s(6)
                                         spacing: rootObj.s(8)
+                                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
-                                        Rectangle {
-                                            Layout.preferredWidth: parent.height
-                                            Layout.preferredHeight: parent.height
-                                            Layout.alignment: Qt.AlignVCenter
-                                            radius: rootObj.s(6)
-                                            color: ThemeBackend.surface1
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "󰂚"
-                                                font.family: "Iosevka Nerd Font"
-                                                font.pixelSize: rootObj.s(16)
-                                                color: ThemeBackend.mauve
-                                            }
+                                        Text {
+                                            text: I18n.t("guide.common.show_bar", "Show bar")
+                                            font.family: ThemeBackend.fontFamily
+                                            font.pixelSize: rootObj.s(11)
+                                            color: ThemeBackend.subtext0
                                         }
 
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            Layout.alignment: Qt.AlignVCenter
-                                            spacing: rootObj.s(4)
+                                        Toggle {
+                                            checked: notificationsTabRoot.showBarBox
+                                            accentColor: ThemeBackend.mauve
+                                            baseColor: ThemeBackend.surface1
+                                            handleColor: ThemeBackend.crust
+                                            handleOffColor: ThemeBackend.text
+                                            onToggled: function(c) {
+                                                notificationsTabRoot.showBarBox = c;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                ScreenPositionSelector {
+                                    id: screenSelector
+                                    Layout.fillWidth: true
+                                    horizontalPosition: notificationsTabRoot.horizontalPosition
+                                    verticalPosition: notificationsTabRoot.verticalPosition
+                                    gridEnabled: notificationsTabRoot.gridEnabled
+                                    showBar: notificationsTabRoot.showBarBox
+                                    marginV: rootObj.s(12)
+                                    marginH: rootObj.s(16)
+                                    dragWidth: rootObj.s(170)
+                                    dragHeight: rootObj.s(48)
+
+                                    onPositionChanged: (hPos, vPos) => {
+                                        let h = Math.round(hPos);
+                                        let v = Math.round(vPos);
+                                        notificationsTabRoot.horizontalPosition = h;
+                                        notificationsTabRoot.verticalPosition = v;
+                                        let idx = notificationsTabRoot.getPresetIndex(h, v);
+                                        notificationsTabRoot.position = idx !== -1 ? notificationsTabRoot.getPosStringFromIndex(idx) : "custom";
+                                        debounceTimer.restart();
+                                    }
+
+                                    onDragFinished: {
+                                        debounceTimer.stop();
+                                        let idx = notificationsTabRoot.getPresetIndex(notificationsTabRoot.horizontalPosition, notificationsTabRoot.verticalPosition);
+                                        let posStr = idx !== -1 ? notificationsTabRoot.getPosStringFromIndex(idx) : "custom";
+                                        notificationsTabRoot.position = posStr;
+                                        let current = JSON.parse(JSON.stringify(Config.getSetting("notifications", defaultNotificationSettings) || defaultNotificationSettings));
+                                        current.horizontalPosition = notificationsTabRoot.horizontalPosition;
+                                        current.verticalPosition = notificationsTabRoot.verticalPosition;
+                                        current.position = posStr;
+                                        Config.setSetting("notifications", current);
+                                        notificationsTabRoot.notifSettings = current;
+                                    }
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: rootObj.s(8)
+                                        color: ThemeBackend.base
+                                        border.width: 1
+                                        border.color: ThemeBackend.surface0
+                                        clip: true
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: rootObj.s(6)
+                                            spacing: rootObj.s(8)
 
                                             Rectangle {
-                                                Layout.fillWidth: true
-                                                Layout.maximumWidth: rootObj.s(80)
-                                                height: rootObj.s(6)
-                                                radius: rootObj.s(3)
-                                                color: ThemeBackend.text
+                                                Layout.preferredWidth: parent.height
+                                                Layout.preferredHeight: parent.height
+                                                Layout.alignment: Qt.AlignVCenter
+                                                radius: rootObj.s(6)
+                                                color: ThemeBackend.surface1
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "󰂚"
+                                                    font.family: "Iosevka Nerd Font"
+                                                    font.pixelSize: rootObj.s(16)
+                                                    color: ThemeBackend.mauve
+                                                }
                                             }
 
-                                            Rectangle {
+                                            ColumnLayout {
                                                 Layout.fillWidth: true
-                                                Layout.maximumWidth: rootObj.s(110)
-                                                height: rootObj.s(5)
-                                                radius: rootObj.s(2.5)
-                                                color: ThemeBackend.subtext0
+                                                Layout.alignment: Qt.AlignVCenter
+                                                spacing: rootObj.s(4)
+
+                                                Rectangle {
+                                                    Layout.fillWidth: true
+                                                    Layout.maximumWidth: rootObj.s(80)
+                                                    height: rootObj.s(6)
+                                                    radius: rootObj.s(3)
+                                                    color: ThemeBackend.text
+                                                }
+
+                                                Rectangle {
+                                                    Layout.fillWidth: true
+                                                    Layout.maximumWidth: rootObj.s(110)
+                                                    height: rootObj.s(5)
+                                                    radius: rootObj.s(2.5)
+                                                    color: ThemeBackend.subtext0
+                                                }
                                             }
                                         }
                                     }
@@ -700,13 +727,28 @@ Item {
                     anchors.leftMargin: rootObj.s(14)
                     anchors.rightMargin: rootObj.s(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    spacing: rootObj.s(12)
+
+                    IconButton {
+                        enabled: false
+                        size: rootObj.s(32)
+                        Layout.preferredWidth: rootObj.s(32)
+                        Layout.preferredHeight: rootObj.s(32)
+                        Layout.alignment: Qt.AlignVCenter
+                        cornerRadius: ThemeBackend.borderRadius
+                        buttonIcon: "󰂛"
+                        iconFontSize: rootObj.s(16)
+                        accentColor: ThemeBackend.surface0
+                        textColor: "#ffffff"
+                    }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: rootObj.s(2)
 
                         Text {
+                            Layout.fillWidth: true
                             text: I18n.t("guide.notifications.dnd.title")
                             font.family: ThemeBackend.fontFamily
                             font.pixelSize: rootObj.s(13)
@@ -714,6 +756,7 @@ Item {
                         }
 
                         Text {
+                            Layout.fillWidth: true
                             text: I18n.t("guide.notifications.dnd.desc")
                             font.family: ThemeBackend.fontFamily
                             font.pixelSize: rootObj.s(11)
@@ -750,13 +793,28 @@ Item {
                     anchors.leftMargin: rootObj.s(14)
                     anchors.rightMargin: rootObj.s(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    spacing: rootObj.s(12)
+
+                    IconButton {
+                        enabled: false
+                        size: rootObj.s(32)
+                        Layout.preferredWidth: rootObj.s(32)
+                        Layout.preferredHeight: rootObj.s(32)
+                        Layout.alignment: Qt.AlignVCenter
+                        cornerRadius: ThemeBackend.borderRadius
+                        buttonIcon: "󰋑"
+                        iconFontSize: rootObj.s(16)
+                        accentColor: ThemeBackend.surface0
+                        textColor: "#ffffff"
+                    }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: rootObj.s(2)
 
                         Text {
+                            Layout.fillWidth: true
                             text: I18n.t("guide.notifications.empty_graphic.title")
                             font.family: ThemeBackend.fontFamily
                             font.pixelSize: rootObj.s(13)
@@ -764,6 +822,7 @@ Item {
                         }
 
                         Text {
+                            Layout.fillWidth: true
                             text: I18n.t("guide.notifications.empty_graphic.desc")
                             font.family: ThemeBackend.fontFamily
                             font.pixelSize: rootObj.s(11)
@@ -805,13 +864,28 @@ Item {
                     RowLayout {
                         id: rowSoundToggleLayout
                         Layout.fillWidth: true
-                        spacing: rootObj.s(16)
+                        spacing: rootObj.s(12)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰂚"
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: rootObj.s(2)
 
                             Text {
+                                Layout.fillWidth: true
                                 text: I18n.t("guide.notifications.sound.title")
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: rootObj.s(13)
@@ -819,15 +893,12 @@ Item {
                             }
 
                             Text {
+                                Layout.fillWidth: true
                                 text: I18n.t("guide.notifications.sound.desc")
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: rootObj.s(11)
                                 color: ThemeBackend.subtext0
                             }
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
                         }
 
                         Toggle {
@@ -867,12 +938,28 @@ Item {
                             RowLayout {
                                 id: rowSoundSelectLayout
                                 Layout.fillWidth: true
-                                spacing: rootObj.s(16)
+                                spacing: rootObj.s(12)
+
+                                IconButton {
+                                    enabled: false
+                                    size: rootObj.s(32)
+                                    Layout.preferredWidth: rootObj.s(32)
+                                    Layout.preferredHeight: rootObj.s(32)
+                                    Layout.alignment: Qt.AlignVCenter
+                                    cornerRadius: ThemeBackend.borderRadius
+                                    buttonIcon: "󰎆"
+                                    iconFontSize: rootObj.s(16)
+                                    accentColor: ThemeBackend.surface0
+                                    textColor: "#ffffff"
+                                }
 
                                 ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
                                     spacing: rootObj.s(2)
 
                                     Text {
+                                        Layout.fillWidth: true
                                         text: I18n.t("guide.notifications.sound_file.title")
                                         font.family: ThemeBackend.fontFamily
                                         font.pixelSize: rootObj.s(13)
@@ -880,15 +967,12 @@ Item {
                                     }
 
                                     Text {
+                                        Layout.fillWidth: true
                                         text: I18n.t("guide.notifications.sound_file.desc")
                                         font.family: ThemeBackend.fontFamily
                                         font.pixelSize: rootObj.s(11)
                                         color: ThemeBackend.subtext0
                                     }
-                                }
-
-                                Item {
-                                    Layout.fillWidth: true
                                 }
 
                                 RowLayout {

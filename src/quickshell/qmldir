@@ -1,3 +1,4 @@
+Dock 1.0 dock/Dock.qml
 Dim 1.0 Dim.qml
 Main 1.0 Main.qml
 
@@ -59,7 +60,3 @@ singleton OsdController 1.0 singletons/widgetcontrols/OsdController.qml
 singleton SideMusicController 1.0 singletons/widgetcontrols/SideMusicController.qml
 singleton TrayMenuController 1.0 singletons/widgetcontrols/TrayMenuController.qml
 singleton WidgetSync 1.0 singletons/widgetcontrols/WidgetSync.qml
-
-TaskbarDock 1.0 taskbar/TaskbarDock.qml
-singleton IconResolver 1.0 singletons/system/IconResolver.qml
-singleton PopupController 1.0 singletons/widgetcontrols/PopupController.qml

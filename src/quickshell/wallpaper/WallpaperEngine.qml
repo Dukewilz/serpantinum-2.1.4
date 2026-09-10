@@ -382,7 +382,7 @@ ShellRoot {
                     from: 0.0
                     to: 1.0
                     duration: barWindow.transitionDuration
-                    easing.type: Easing.OutCubic
+                    easing.type: Easing.OutQuint
 
                     onFinished: {
                         Qt.callLater(barWindow.drainPendingWallpaper);

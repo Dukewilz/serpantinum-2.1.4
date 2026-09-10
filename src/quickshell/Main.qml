@@ -64,25 +64,10 @@ PanelWindow {
     }
 
     IpcHandler {
-        id: mainIpc
         target: "main"
 
-        function v24Status(): string {
-            let item = widgetStack.currentItem;
-            let active = masterWindow.currentActive;
-            let win = masterWindow;
-            if (LauncherController.isVisible) { active = "launcher"; win = PopupController.launcherWindow; item = win; }
-            else if (ClipboardController.isVisible) { active = "clipboard"; win = PopupController.clipboardWindow; item = win; }
-            return JSON.stringify({ build: "v24-212-rebuild1", configReady: Config.dataReady,
-                widget: active, visible: win ? win.visible : false,
-                contentVisible: item ? item.visible : false, enabled: item && item.enabled !== undefined ? item.enabled : true,
-                width: item ? item.width : 0, height: item ? item.height : 0,
-                stageOpacity: contentStage.opacity,
-                launcher: LauncherController.isVisible, clipboard: ClipboardController.isVisible });
-        }
-
         function forceReload(): void {
-            Config.requestReload();
+            Quickshell.reload(true);
         }
 
         function clearNotifications(): void {
@@ -134,6 +119,13 @@ PanelWindow {
                     Networking.wifiEnabled = false;
                     if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = false;
                 }
+                return;
+            }
+
+            if (cmd === "autohide" || targetWidget === "autohide") {
+                let bar = Config.getSetting("bar", {});
+                bar.autohide = !bar.autohide;
+                Config.setSetting("bar", bar);
                 return;
             }
 
@@ -303,6 +295,8 @@ PanelWindow {
 
     property var widgetCache: ({})
     property var componentCache: ({})
+    property var _allWidgetNames: ["battery", "network", "volume", "guide", "calendar", "wallpaper", "music", "movies", "notifications", "system"]
+    property int _preloadIndex: 0
 
     function widgetNameForItem(item) {
         for (let name in widgetCache) {
@@ -333,12 +327,31 @@ PanelWindow {
         return item;
     }
 
-    Component.onCompleted: {
-        PopupController.receiver = mainIpc;
-        applySettings();
+    function preloadWidget(name) {
+        let t = getLayout(name);
+        if (!t || !t.comp) return;
+        ensureWidgetItem(name, t);
     }
-    Component.onDestruction: {
-        if (PopupController.receiver === mainIpc) PopupController.receiver = null;
+
+    Component.onCompleted: {
+        preloadStaggerTimer.start();
+    }
+
+    Timer {
+        id: preloadStaggerTimer
+        interval: 150
+        repeat: true
+        onTriggered: {
+            if (masterWindow._preloadIndex >= masterWindow._allWidgetNames.length) {
+                preloadStaggerTimer.stop();
+                return;
+            }
+            if (masterWindow.currentActive !== "hidden") {
+                return;
+            }
+            preloadWidget(masterWindow._allWidgetNames[masterWindow._preloadIndex]);
+            masterWindow._preloadIndex++;
+        }
     }
 
     property string targetActive: "hidden"
@@ -349,7 +362,6 @@ PanelWindow {
     }
 
     onScreenChanged: {
-        applySettings();
         if (currentActive !== "hidden") {
             reportWidgetState();
         }
@@ -378,21 +390,64 @@ PanelWindow {
         id: osdPopups
     }
 
-    function applySettings() {
-        let parsed = Config.rawSettings || {};
-        let b = parsed.bar || {};
-        masterWindow.rawBarSettings = b;
-        masterWindow.barPosition = b.position !== undefined ? b.position : "top";
-        masterWindow.barAutohide = Boolean(b.autohide);
-        let name = masterWindow.screen ? masterWindow.screen.name : "";
-        let monitor = parsed.display && parsed.display.monitors ? parsed.display.monitors[name] : null;
-        let scale = monitor && monitor.scale !== undefined ? monitor.scale
-                  : (parsed.general && parsed.general.uiScale !== undefined ? parsed.general.uiScale : parsed.uiScale);
-        masterWindow.globalUiScale = Number.isFinite(Number(scale)) && Number(scale) > 0 ? Number(scale) : 1.0;
+    Process {
+        id: settingsReader
+        command: ["bash", "-c", `cat "${Config.settingsJsonPath}" 2>/devnull || echo '{}'`]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    if (this.text && this.text.trim().length > 0 && this.text.trim() !== "{}") {
+                        let parsed = JSON.parse(this.text);
+                        let sName = masterWindow.screen ? masterWindow.screen.name : "";
+                        let sVal = undefined;
+
+                        if (sName !== "" && parsed.display && parsed.display.monitors && parsed.display.monitors[sName] && parsed.display.monitors[sName].scale !== undefined) {
+                            sVal = parsed.display.monitors[sName].scale;
+                        } else if (parsed.general && parsed.general.uiScale !== undefined) {
+                            sVal = parsed.general.uiScale;
+                        } else if (parsed.uiScale !== undefined) {
+                            sVal = parsed.uiScale;
+                        }
+
+                        if (sVal !== undefined && masterWindow.globalUiScale !== sVal) {
+                            masterWindow.globalUiScale = sVal;
+                        }
+
+                        if (parsed.bar) {
+                            masterWindow.rawBarSettings = parsed.bar;
+                            if (parsed.bar.position !== undefined) masterWindow.barPosition = parsed.bar.position;
+                            if (parsed.bar.autohide !== undefined) masterWindow.barAutohide = Boolean(parsed.bar.autohide);
+                        }
+                    }
+                } catch (e) {
+                }
+            }
+        }
     }
+
+    Process {
+        id: settingsWatcher
+        command: ["bash", "-c", `while [ ! -f "${Config.settingsJsonPath}" ]; do sleep 1; done; inotifywait -qq -e modify,close_write "${Config.settingsJsonPath}"`]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                settingsReader.running = false;
+                settingsReader.running = true;
+                settingsWatcher.running = false;
+                settingsWatcher.running = true;
+            }
+        }
+    }
+
     Connections {
-        target: Config
-        function onRawSettingsChanged() { masterWindow.applySettings(); }
+        target: (typeof Config !== "undefined") ? Config : null
+        function onSettingsLoaded() {
+            let b = (Config.rawSettings && Config.rawSettings.bar) ? Config.rawSettings.bar : {};
+            masterWindow.rawBarSettings = b;
+            masterWindow.barPosition = (b && b.position !== undefined) ? b.position : "top";
+            masterWindow.barAutohide = (b && b.autohide !== undefined) ? Boolean(b.autohide) : false;
+        }
     }
 
     function getLayout(name) {
@@ -555,7 +610,6 @@ PanelWindow {
     }
 
     function switchWidget(newWidget, arg) {
-        switchRetry.stop();
         masterWindow.switchGeneration++;
         let gen = masterWindow.switchGeneration;
         masterWindow.targetActive = newWidget;
@@ -583,27 +637,6 @@ PanelWindow {
         }
     }
 
-    Timer {
-        id: switchRetry
-        interval: 50
-        property string widgetName: ""
-        property string widgetArg: ""
-        property int generation: -1
-        property int attempts: 0
-        onTriggered: masterWindow.executeSwitch(widgetName, widgetArg, generation)
-    }
-    function retrySwitch(name, arg, gen) {
-        if (gen !== switchRetry.generation) switchRetry.attempts = 0;
-        if (++switchRetry.attempts > 20) {
-            console.warn("Popup could not be loaded:", name);
-            return;
-        }
-        switchRetry.widgetName = name;
-        switchRetry.widgetArg = arg;
-        switchRetry.generation = gen;
-        switchRetry.restart();
-    }
-
     function executeSwitch(newWidget, arg, gen) {
         if (gen !== masterWindow.switchGeneration || newWidget === "hidden") return;
 
@@ -614,13 +647,21 @@ PanelWindow {
 
         let t = getLayout(newWidget);
         if (!t || !t.w || !t.h || t.w < 10 || t.h < 10) {
-            retrySwitch(newWidget, arg, gen);
+            Qt.callLater(function() {
+                if (gen === masterWindow.switchGeneration) {
+                    executeSwitch(newWidget, arg, gen);
+                }
+            });
             return;
         }
 
         let cachedItem = ensureWidgetItem(newWidget, t);
         if (!cachedItem) {
-            retrySwitch(newWidget, arg, gen);
+            Qt.callLater(function() {
+                if (gen === masterWindow.switchGeneration) {
+                    executeSwitch(newWidget, arg, gen);
+                }
+            });
             return;
         }
 

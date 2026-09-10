@@ -232,6 +232,7 @@ Item {
     property real gap: barWindow ? barWindow.s(2) : 2
     property real groupGap: barWindow ? -barWindow.s(4) : -4
     property real gap8: barWindow ? barWindow.s(10) : 10
+    property real groupPad: (!isSolid || distinctPills) ? (barWindow ? barWindow.s(4) : 4) : 0
 
     function calcTargetHeight(arr) {
         let total = 0;
@@ -249,7 +250,7 @@ Item {
                     }
                 }
                 if (gItems > 0) {
-                    total += gh;
+                    total += gh + groupPad * 2;
                     groupCount++;
                 }
             } else {
@@ -362,21 +363,22 @@ Item {
                     if (matchId(item[k], id)) { groupHasId = true; break; }
                 }
                 let gItems = 0;
+                let groupOffset = offset + groupPad;
                 for (let j = 0; j < item.length; j++) {
                     let mId = item[j];
                     let h = getH(mId);
                     if (matchId(mId, id)) {
-                        if (gItems > 0) offset += groupGap;
-                        return baseY + offset;
+                        if (gItems > 0) groupOffset += groupGap;
+                        return baseY + groupOffset;
                     }
                     if (h > 0) {
-                        if (gItems > 0) offset += groupGap;
-                        offset += h;
+                        if (gItems > 0) groupOffset += groupGap;
+                        groupOffset += h;
                         gItems++;
                     }
                 }
                 if (gItems > 0 && !groupHasId) {
-                    offset += gap;
+                    offset = groupOffset + groupPad + gap;
                 }
             } else {
                 if (matchId(item, id)) {
@@ -462,10 +464,10 @@ Item {
         y: isFill ? 0 : contentWrapper.dynamicMinY
         width: barWindow ? barWindow.barHeight : 40
         height: isFill ? contentWrapper.height : (contentWrapper.dynamicMaxY - contentWrapper.dynamicMinY)
-        color: Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
+        color: Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
         radius: isFill ? 0 : ThemeBackend.borderRadius
         border.width: (isSolid || isFill) ? 0 : 1
-        border.color: (isSolid || isFill) ? "transparent" : Qt.alpha(ThemeBackend.surface0, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
+        border.color: (isSolid || isFill) ? "transparent" : Qt.alpha(ThemeBackend.surface0, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
         visible: (isSolid || isFill) && (barWindow ? !barWindow.positionChanging : true)
         opacity: visible ? 1.0 : 0.0
 
@@ -506,7 +508,7 @@ Item {
         Connections {
             target: contentWrapper.barWindow || null
             function onBarPositionChanged() { topOuterCorner.requestPaint(); }
-            function onBarSurfaceOpacityChanged() { topOuterCorner.requestPaint(); }
+            function onBarOpacityChanged() { topOuterCorner.requestPaint(); }
         }
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -514,7 +516,7 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
-            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0);
+            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0);
             ctx.beginPath();
             if (barWindow && barWindow.barPosition === "right") {
                 ctx.moveTo(width, 0);
@@ -558,7 +560,7 @@ Item {
         Connections {
             target: contentWrapper.barWindow || null
             function onBarPositionChanged() { bottomOuterCorner.requestPaint(); }
-            function onBarSurfaceOpacityChanged() { bottomOuterCorner.requestPaint(); }
+            function onBarOpacityChanged() { bottomOuterCorner.requestPaint(); }
         }
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -566,7 +568,7 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
-            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0);
+            ctx.fillStyle = Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0);
             ctx.beginPath();
             if (barWindow && barWindow.barPosition === "right") {
                 ctx.moveTo(width, height);
@@ -624,7 +626,7 @@ Item {
                     }
                 }
                 if (firstY === -1) return { y: 0, h: 0, w: groupW, v: false };
-                return { y: firstY, h: (lastY + lastH - firstY), w: groupW, v: true };
+                return { y: firstY - contentWrapper.groupPad, h: (lastY + lastH - firstY) + contentWrapper.groupPad * 2, w: groupW, v: true };
             }
 
             property var metrics: getGroupMetrics()
@@ -641,8 +643,8 @@ Item {
             opacity: visible ? 1.0 : 0.0
 
             color: (contentWrapper.isSolid && contentWrapper.distinctPills)
-                ? Qt.alpha(Qt.darker(ThemeBackend.surface0, 1.15), (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
-                : Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barSurfaceOpacity !== undefined) ? barWindow.barSurfaceOpacity : 1.0)
+                ? Qt.alpha(Qt.darker(ThemeBackend.surface0, 1.15), (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
+                : Qt.alpha(ThemeBackend.base, (barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0)
             radius: ThemeBackend.borderRadius
             border.width: 0
 

@@ -27,7 +27,7 @@ Rectangle {
     width: targetWidth
     height: targetHeight
 
-    radius: ThemeBackend.borderRadius
+    radius: Math.round(targetWidth / 2)
     border.width: 0
     color: isGrouped ? "transparent" : (isSolid ? (distinctPills ? Qt.darker(ThemeBackend.surface0, 1.15) : "transparent") : ThemeBackend.base)
     clip: true
@@ -43,7 +43,7 @@ Rectangle {
         anchors.centerIn: parent
         width: barWindow ? barWindow.s(sideTopRoot.isCompact ? 32 : 34) : (sideTopRoot.isCompact ? 32 : 34)
         height: barWindow ? barWindow.s(sideTopRoot.isCompact ? 32 : 34) : (sideTopRoot.isCompact ? 32 : 34)
-        cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
+        cornerRadius: Math.round((barWindow ? barWindow.s(sideTopRoot.isCompact ? 32 : 34) : (sideTopRoot.isCompact ? 32 : 34)) / 2)
         buttonIcon: "󰒓"
         iconOffsetX: 0
         iconFontSize: barWindow ? barWindow.s(sideTopRoot.isCompact ? 17 : 18) : (sideTopRoot.isCompact ? 17 : 18)

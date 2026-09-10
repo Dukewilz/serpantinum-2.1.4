@@ -34,25 +34,12 @@ Item {
         "position": "top",
         "width": 100,
         "opacity": 100,
-        "contentOpacity": 100,
-        "blur": 0,
         "style": "modular",
         "distinctPills": false,
         "time": {"format": "HH:mm:ss"},
         "autohide": false,
         "autohideTimeout": 1000,
         "workspaceCount": 8,
-        "cava": {"bars": 10, "barWidth": 3, "spacing": 3},
-        "innerPill": {
-            "enabled": true,
-            "style": "adaptive",
-            "elevationPercent": 8,
-            "borderPercent": 10,
-            "verticalPadding": 5,
-            "minimumHeight": 46,
-            "outerRadius": 16,
-            "innerRadius": 10
-        },
         "groupColors": {},
         "modules": {
             "left": ["left", "workspaces", "media"],
@@ -61,20 +48,10 @@ Item {
         }
     }
 
-    property var defaultTaskbarSettings: ({
-        "enabled": false,
-        "autoHide": true,
-        "showFavorites": true,
-        "showRunning": true,
-        "scalePercent": 88
-    })
-
     property var barSettings: Config.getSetting("bar", defaultBarSettings)
     property string barPosition: barSettings.position !== undefined ? barSettings.position : "top"
     property real currentBarWidth: barSettings.width !== undefined ? barSettings.width : 100
     property real currentBarOpacity: barSettings.opacity !== undefined ? barSettings.opacity : 100
-    property real currentContentOpacity: barSettings.contentOpacity !== undefined ? barSettings.contentOpacity : 100
-    property real currentBarBlur: barSettings.blur !== undefined ? barSettings.blur : 0
     property string barStyle: {
         let s = barSettings.style;
         if (typeof s === "string") return s;
@@ -89,86 +66,6 @@ Item {
     property bool autohide: barSettings.autohide !== undefined ? barSettings.autohide : false
     property int autohideTimeout: barSettings.autohideTimeout !== undefined ? barSettings.autohideTimeout : 1000
     property int workspaceCount: barSettings.workspaceCount !== undefined ? barSettings.workspaceCount : 8
-    property int cavaBars: barSettings.cava && barSettings.cava.bars !== undefined ? barSettings.cava.bars : 10
-    property int cavaBarWidth: barSettings.cava && barSettings.cava.barWidth !== undefined ? barSettings.cava.barWidth : 3
-    property int cavaSpacing: barSettings.cava && barSettings.cava.spacing !== undefined ? barSettings.cava.spacing : 3
-    property bool innerPillEnabled: !barSettings.innerPill || barSettings.innerPill.enabled !== false
-    property string innerPillStyle: barSettings.innerPill && barSettings.innerPill.style !== undefined ? barSettings.innerPill.style : "adaptive"
-    property int innerPillElevation: barSettings.innerPill && barSettings.innerPill.elevationPercent !== undefined ? barSettings.innerPill.elevationPercent : 8
-    property int innerPillBorder: barSettings.innerPill && barSettings.innerPill.borderPercent !== undefined ? barSettings.innerPill.borderPercent : 10
-    property int innerPillPadding: barSettings.innerPill && barSettings.innerPill.verticalPadding !== undefined ? barSettings.innerPill.verticalPadding : 5
-    property int innerPillHeight: barSettings.innerPill && barSettings.innerPill.minimumHeight !== undefined ? barSettings.innerPill.minimumHeight : 46
-    property int innerPillOuterRadius: barSettings.innerPill && barSettings.innerPill.outerRadius !== undefined ? barSettings.innerPill.outerRadius : 16
-    property int innerPillRadius: barSettings.innerPill && barSettings.innerPill.innerRadius !== undefined ? barSettings.innerPill.innerRadius : 10
-    property bool taskbarEnabled: false
-    property bool taskbarAutoHide: true
-    property bool taskbarShowFavorites: true
-    property bool taskbarShowRunning: true
-    property int taskbarScalePercent: 88
-
-    function cloneSettings(value, fallback) {
-        let source = value !== undefined && value !== null ? value : fallback;
-        try { return JSON.parse(JSON.stringify(source)); }
-        catch (e) { return JSON.parse(JSON.stringify(fallback)); }
-    }
-
-    component LeftNumberSetting: Rectangle {
-        id: settingRoot
-        required property string title
-        property string hint: ""
-        required property real currentValue
-        required property real minimumValue
-        required property real maximumValue
-        property real valueStep: 1
-        property int valueDecimals: 0
-        signal valueCommitted(real value)
-
-        Layout.fillWidth: true
-        implicitHeight: settingColumn.implicitHeight + rootObj.s(16)
-        radius: rootObj.s(12)
-        color: Qt.alpha(ThemeBackend.surface0, 0.52)
-        border.width: 1
-        border.color: Qt.alpha(ThemeBackend.surface2, 0.32)
-
-        ColumnLayout {
-            id: settingColumn
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.leftMargin: rootObj.s(12)
-            anchors.rightMargin: rootObj.s(12)
-            spacing: rootObj.s(7)
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: rootObj.s(1)
-                Text { text: settingRoot.title; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(12); color: ThemeBackend.text }
-                Text { visible: settingRoot.hint !== ""; text: settingRoot.hint; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10); color: ThemeBackend.subtext0 }
-            }
-
-            NumberSelector {
-                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                implicitWidth: rootObj.s(154)
-                implicitHeight: rootObj.s(32)
-                from: settingRoot.minimumValue
-                to: settingRoot.maximumValue
-                stepSize: settingRoot.valueStep
-                decimals: settingRoot.valueDecimals
-                value: settingRoot.currentValue
-                baseColor: ThemeBackend.mantle
-                accentColor: ThemeBackend.mauve
-                buttonColor: ThemeBackend.surface1
-                buttonTextColor: ThemeBackend.text
-                textColor: ThemeBackend.text
-                subTextColor: ThemeBackend.subtext0
-                borderColor: Qt.alpha(ThemeBackend.surface2, 0.55)
-                cornerRadius: ThemeBackend.borderRadius
-                fontFamily: ThemeBackend.fontFamily
-                fontPixelSize: rootObj.s(11)
-                onTriggered: settingRoot.valueCommitted(value)
-            }
-        }
-    }
 
     ListModel { id: leftModel }
     ListModel { id: centerModel }
@@ -510,7 +407,6 @@ Item {
     }
 
     function saveModuleModels() {
-        if (!Config.dataReady) return;
         let l = buildModelArray(leftModel);
         let c = buildModelArray(centerModel);
         let r = buildModelArray(rightModel);
@@ -524,29 +420,15 @@ Item {
     }
 
     function resetBarSettings() {
-        if (!Config.dataReady) return;
         clearPendingGroup();
         let current = Config.getSetting("bar", barTabRoot.defaultBarSettings);
         current.modules = JSON.parse(JSON.stringify(barTabRoot.defaultBarSettings.modules));
         current.groupColors = {};
         current.workspaceCount = barTabRoot.defaultBarSettings.workspaceCount;
         current.distinctPills = barTabRoot.defaultBarSettings.distinctPills;
-        current.cava = barTabRoot.cloneSettings(barTabRoot.defaultBarSettings.cava, {});
-        current.innerPill = barTabRoot.cloneSettings(barTabRoot.defaultBarSettings.innerPill, {});
         barTabRoot.assignedGroupColors = {};
         barTabRoot.workspaceCount = barTabRoot.defaultBarSettings.workspaceCount;
         barTabRoot.distinctPills = barTabRoot.defaultBarSettings.distinctPills;
-        barTabRoot.cavaBars = current.cava.bars;
-        barTabRoot.cavaBarWidth = current.cava.barWidth;
-        barTabRoot.cavaSpacing = current.cava.spacing;
-        barTabRoot.innerPillEnabled = current.innerPill.enabled;
-        barTabRoot.innerPillStyle = current.innerPill.style;
-        barTabRoot.innerPillElevation = current.innerPill.elevationPercent;
-        barTabRoot.innerPillBorder = current.innerPill.borderPercent;
-        barTabRoot.innerPillPadding = current.innerPill.verticalPadding;
-        barTabRoot.innerPillHeight = current.innerPill.minimumHeight;
-        barTabRoot.innerPillOuterRadius = current.innerPill.outerRadius;
-        barTabRoot.innerPillRadius = current.innerPill.innerRadius;
         barTabRoot.lastSavedModulesString = barTabRoot.getModulesString(current.modules);
         Config.setSetting("bar", current);
         barTabRoot.barSettings = current;
@@ -829,8 +711,6 @@ Item {
         barTabRoot.barPosition = ts.position !== undefined ? ts.position : "top";
         barTabRoot.currentBarWidth = ts.width !== undefined ? ts.width : 100;
         barTabRoot.currentBarOpacity = ts.opacity !== undefined ? ts.opacity : 100;
-        barTabRoot.currentContentOpacity = ts.contentOpacity !== undefined ? ts.contentOpacity : 100;
-        barTabRoot.currentBarBlur = ts.blur !== undefined ? ts.blur : 0;
         if (typeof ts.style === "string") {
             barTabRoot.barStyle = ts.style;
         } else if (ts.style && typeof ts.style === "object") {
@@ -845,29 +725,10 @@ Item {
         barTabRoot.autohide = ts.autohide !== undefined ? ts.autohide : false;
         barTabRoot.autohideTimeout = ts.autohideTimeout !== undefined ? ts.autohideTimeout : 1000;
         barTabRoot.workspaceCount = ts.workspaceCount !== undefined ? ts.workspaceCount : 8;
-        let cava = ts.cava || barTabRoot.defaultBarSettings.cava;
-        barTabRoot.cavaBars = cava.bars !== undefined ? cava.bars : 10;
-        barTabRoot.cavaBarWidth = cava.barWidth !== undefined ? cava.barWidth : 3;
-        barTabRoot.cavaSpacing = cava.spacing !== undefined ? cava.spacing : 3;
-        let pill = ts.innerPill || barTabRoot.defaultBarSettings.innerPill;
-        barTabRoot.innerPillEnabled = pill.enabled !== false;
-        barTabRoot.innerPillStyle = pill.style !== undefined ? pill.style : "adaptive";
-        barTabRoot.innerPillElevation = pill.elevationPercent !== undefined ? pill.elevationPercent : 8;
-        barTabRoot.innerPillBorder = pill.borderPercent !== undefined ? pill.borderPercent : 10;
-        barTabRoot.innerPillPadding = pill.verticalPadding !== undefined ? pill.verticalPadding : 5;
-        barTabRoot.innerPillHeight = pill.minimumHeight !== undefined ? pill.minimumHeight : 46;
-        barTabRoot.innerPillOuterRadius = pill.outerRadius !== undefined ? pill.outerRadius : 16;
-        barTabRoot.innerPillRadius = pill.innerRadius !== undefined ? pill.innerRadius : 10;
         if (ts.groupColors) {
             barTabRoot.assignedGroupColors = ts.groupColors;
         }
         barTabRoot.barSettings = ts;
-        let dock = Config.getSetting("taskbar", barTabRoot.defaultTaskbarSettings) || barTabRoot.defaultTaskbarSettings;
-        barTabRoot.taskbarEnabled = dock.enabled === true;
-        barTabRoot.taskbarAutoHide = dock.autoHide !== false;
-        barTabRoot.taskbarShowFavorites = dock.showFavorites !== false;
-        barTabRoot.taskbarShowRunning = dock.showRunning !== false;
-        barTabRoot.taskbarScalePercent = dock.scalePercent !== undefined ? Math.round(dock.scalePercent) : 88;
     }
 
     Component.onCompleted: {
@@ -891,13 +752,10 @@ Item {
     }
 
     function updateBarSettings() {
-        if (!Config.dataReady) return;
-        let current = barTabRoot.cloneSettings(Config.getSetting("bar", null), barTabRoot.defaultBarSettings);
+        let current = Config.getSetting("bar", barTabRoot.defaultBarSettings);
         current.position = barTabRoot.barPosition;
         current.width = barTabRoot.currentBarWidth;
         current.opacity = barTabRoot.currentBarOpacity;
-        current.contentOpacity = barTabRoot.currentContentOpacity;
-        current.blur = barTabRoot.currentBarBlur;
         current.style = barTabRoot.barStyle;
         current.distinctPills = barTabRoot.distinctPills;
         if (!current.time) current.time = {};
@@ -905,37 +763,11 @@ Item {
         current.autohide = barTabRoot.autohide;
         current.autohideTimeout = barTabRoot.autohideTimeout;
         current.workspaceCount = barTabRoot.workspaceCount;
-        current.cava = {
-            bars: Math.max(4, Math.min(24, Math.round(barTabRoot.cavaBars))),
-            barWidth: Math.max(2, Math.min(6, Math.round(barTabRoot.cavaBarWidth))),
-            spacing: Math.max(1, Math.min(6, Math.round(barTabRoot.cavaSpacing)))
-        };
-        current.innerPill = {
-            enabled: barTabRoot.innerPillEnabled,
-            style: barTabRoot.innerPillStyle,
-            elevationPercent: Math.max(0, Math.min(12, Math.round(barTabRoot.innerPillElevation))),
-            borderPercent: Math.max(0, Math.min(20, Math.round(barTabRoot.innerPillBorder))),
-            verticalPadding: Math.max(3, Math.min(9, Math.round(barTabRoot.innerPillPadding))),
-            minimumHeight: Math.max(42, Math.min(58, Math.round(barTabRoot.innerPillHeight))),
-            outerRadius: Math.max(8, Math.min(24, Math.round(barTabRoot.innerPillOuterRadius))),
-            innerRadius: Math.max(4, Math.min(20, Math.round(barTabRoot.innerPillRadius)))
-        };
-        if (!current.modules) current.modules = barTabRoot.cloneSettings(barTabRoot.defaultBarSettings.modules, {});
+        if (!current.modules) current.modules = barTabRoot.defaultBarSettings.modules;
         current.groupColors = barTabRoot.assignedGroupColors;
 
         barTabRoot.lastSavedModulesString = barTabRoot.getModulesString(current.modules);
         Config.setSetting("bar", current);
-    }
-
-    function updateTaskbarSettings() {
-        if (!Config.dataReady) return;
-        Config.setSetting("taskbar", {
-            enabled: barTabRoot.taskbarEnabled,
-            autoHide: barTabRoot.taskbarAutoHide,
-            showFavorites: barTabRoot.taskbarShowFavorites,
-            showRunning: barTabRoot.taskbarShowRunning,
-            scalePercent: Math.max(65, Math.min(110, Math.round(barTabRoot.taskbarScalePercent)))
-        });
     }
 
     Component {
@@ -1264,13 +1096,27 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: rootObj.s(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    spacing: rootObj.s(12)
+
+                    IconButton {
+                        enabled: false
+                        size: rootObj.s(32)
+                        Layout.preferredWidth: rootObj.s(32)
+                        Layout.preferredHeight: rootObj.s(32)
+                        Layout.alignment: Qt.AlignVCenter
+                        cornerRadius: ThemeBackend.borderRadius
+                        buttonIcon: "󱂬"
+                        iconFontSize: rootObj.s(16)
+                        accentColor: ThemeBackend.surface0
+                        textColor: "#ffffff"
+                    }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: rootObj.s(2)
-                        Text { text: I18n.t("guide.bar.position.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
-                        Text { text: I18n.t("guide.bar.position.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.position.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.position.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
                     }
 
                     Dropdown {
@@ -1315,13 +1161,27 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: rootObj.s(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    spacing: rootObj.s(12)
+
+                    IconButton {
+                        enabled: false
+                        size: rootObj.s(32)
+                        Layout.preferredWidth: rootObj.s(32)
+                        Layout.preferredHeight: rootObj.s(32)
+                        Layout.alignment: Qt.AlignVCenter
+                        cornerRadius: ThemeBackend.borderRadius
+                        buttonIcon: "󰏘"
+                        iconFontSize: rootObj.s(16)
+                        accentColor: ThemeBackend.surface0
+                        textColor: "#ffffff"
+                    }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: rootObj.s(2)
-                        Text { text: I18n.t("guide.bar.style.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
-                        Text { text: I18n.t("guide.bar.style.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.style.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.style.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
                     }
 
                     Switch {
@@ -1371,18 +1231,34 @@ Item {
                         anchors.right: parent.right
                         anchors.rightMargin: rootObj.s(14)
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: rootObj.s(16)
+                        spacing: rootObj.s(12)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰍜"
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: rootObj.s(2)
                             Text {
+                                Layout.fillWidth: true
                                 text: I18n.t("guide.bar.distinct_pills.title")
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: rootObj.s(13)
                                 color: ThemeBackend.text
                             }
                             Text {
+                                Layout.fillWidth: true
                                 text: I18n.t("guide.bar.distinct_pills.desc")
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: rootObj.s(11)
@@ -1436,12 +1312,27 @@ Item {
                         anchors.right: parent.right
                         anchors.rightMargin: rootObj.s(14)
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: rootObj.s(16)
+                        spacing: rootObj.s(12)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰘖"
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: rootObj.s(2)
                             Text {
+                                Layout.fillWidth: true
                                 text: {
                                     if (barTabRoot.barPosition === "left" || barTabRoot.barPosition === "right") {
                                         let h = I18n.t("guide.bar.height.title");
@@ -1458,6 +1349,7 @@ Item {
                                 color: ThemeBackend.text
                             }
                             Text {
+                                Layout.fillWidth: true
                                 text: {
                                     if (barTabRoot.barPosition === "left" || barTabRoot.barPosition === "right") {
                                         let h = I18n.t("guide.bar.height.desc");
@@ -1527,13 +1419,27 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: rootObj.s(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    spacing: rootObj.s(12)
+
+                    IconButton {
+                        enabled: false
+                        size: rootObj.s(32)
+                        Layout.preferredWidth: rootObj.s(32)
+                        Layout.preferredHeight: rootObj.s(32)
+                        Layout.alignment: Qt.AlignVCenter
+                        cornerRadius: ThemeBackend.borderRadius
+                        buttonIcon: "󰃟"
+                        iconFontSize: rootObj.s(16)
+                        accentColor: ThemeBackend.surface0
+                        textColor: "#ffffff"
+                    }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: rootObj.s(2)
-                        Text { text: I18n.t("guide.bar.opacity.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
-                        Text { text: I18n.t("guide.bar.opacity.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.opacity.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.opacity.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
                     }
 
                     RowLayout {
@@ -1587,13 +1493,27 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: rootObj.s(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    spacing: rootObj.s(12)
+
+                    IconButton {
+                        enabled: false
+                        size: rootObj.s(32)
+                        Layout.preferredWidth: rootObj.s(32)
+                        Layout.preferredHeight: rootObj.s(32)
+                        Layout.alignment: Qt.AlignVCenter
+                        cornerRadius: ThemeBackend.borderRadius
+                        buttonIcon: "󰅐"
+                        iconFontSize: rootObj.s(16)
+                        accentColor: ThemeBackend.surface0
+                        textColor: "#ffffff"
+                    }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: rootObj.s(2)
-                        Text { text: I18n.t("guide.bar.time.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
-                        Text { text: I18n.t("guide.bar.time.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.time.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.time.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
                     }
 
                     Input {
@@ -1637,13 +1557,27 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: rootObj.s(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    spacing: rootObj.s(12)
+
+                    IconButton {
+                        enabled: false
+                        size: rootObj.s(32)
+                        Layout.preferredWidth: rootObj.s(32)
+                        Layout.preferredHeight: rootObj.s(32)
+                        Layout.alignment: Qt.AlignVCenter
+                        cornerRadius: ThemeBackend.borderRadius
+                        buttonIcon: "󰈉"
+                        iconFontSize: rootObj.s(16)
+                        accentColor: ThemeBackend.surface0
+                        textColor: "#ffffff"
+                    }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: rootObj.s(2)
-                        Text { text: I18n.t("guide.bar.autohide.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
-                        Text { text: I18n.t("guide.bar.autohide.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.autohide.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.autohide.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
                     }
 
                     Toggle {
@@ -1688,13 +1622,27 @@ Item {
                         anchors.right: parent.right
                         anchors.rightMargin: rootObj.s(14)
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: rootObj.s(16)
+                        spacing: rootObj.s(12)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰔛"
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: rootObj.s(2)
-                            Text { text: I18n.t("guide.bar.timeout.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
-                            Text { text: I18n.t("guide.bar.timeout.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
+                            Text { Layout.fillWidth: true; text: I18n.t("guide.bar.timeout.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
+                            Text { Layout.fillWidth: true; text: I18n.t("guide.bar.timeout.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
                         }
 
                         RowLayout {
@@ -1749,13 +1697,27 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: rootObj.s(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    spacing: rootObj.s(12)
+
+                    IconButton {
+                        enabled: false
+                        size: rootObj.s(32)
+                        Layout.preferredWidth: rootObj.s(32)
+                        Layout.preferredHeight: rootObj.s(32)
+                        Layout.alignment: Qt.AlignVCenter
+                        cornerRadius: ThemeBackend.borderRadius
+                        buttonIcon: "󰮯"
+                        iconFontSize: rootObj.s(16)
+                        accentColor: ThemeBackend.surface0
+                        textColor: "#ffffff"
+                    }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: rootObj.s(2)
-                        Text { text: I18n.t("guide.bar.workspaces.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
-                        Text { text: I18n.t("guide.bar.workspaces.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.workspaces.title"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
+                        Text { Layout.fillWidth: true; text: I18n.t("guide.bar.workspaces.desc"); font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
                     }
 
                     NumberSelector {
@@ -1797,248 +1759,6 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: rowContentOpacityLayout.implicitHeight + rootObj.s(24)
-                radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.width: 0
-
-                RowLayout {
-                    id: rowContentOpacityLayout
-                    anchors.left: parent.left
-                    anchors.leftMargin: rootObj.s(14)
-                    anchors.right: parent.right
-                    anchors.rightMargin: rootObj.s(14)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: rootObj.s(2)
-                        Text { text: "Content opacity"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
-                        Text { text: "Widget and text opacity independent from the TopBar surface"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
-                    }
-
-                    RowLayout {
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        spacing: rootObj.s(12)
-                        Layout.rightMargin: rootObj.s(8)
-
-                        Draggable {
-                            id: barContentOpacitySlider
-                            implicitWidth: rootObj.s(220); implicitHeight: rootObj.s(18)
-                            from: 20; to: 100; stepSize: 1; defaultValue: 100
-                            showValueBubble: true; valueFormatter: function(v) { return Math.round(v) + "%" }
-                            value: barTabRoot.currentContentOpacity
-                            backgroundColor: ThemeBackend.surface0; accentColor: ThemeBackend.sapphire; handleColor: ThemeBackend.text; handleBorderColor: ThemeBackend.mantle
-                            onMoved: function(v) { barTabRoot.currentContentOpacity = Math.round(v); barWidthDebounceTimer.restart(); }
-                            onDragFinished: { barWidthDebounceTimer.stop(); barTabRoot.updateBarSettings(); }
-                        }
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: rowBlurLayout.implicitHeight + rootObj.s(24)
-                radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.width: 0
-
-                RowLayout {
-                    id: rowBlurLayout
-                    anchors.left: parent.left
-                    anchors.leftMargin: rootObj.s(14)
-                    anchors.right: parent.right
-                    anchors.rightMargin: rootObj.s(14)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: rootObj.s(2)
-                        Text { text: "TopBar surface blur"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
-                        Text { text: "Blurred wallpaper is clipped inside the bar surface"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.subtext0 }
-                    }
-
-                    RowLayout {
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        spacing: rootObj.s(12)
-                        Layout.rightMargin: rootObj.s(8)
-
-                        Draggable {
-                            id: barBlurSlider
-                            implicitWidth: rootObj.s(220); implicitHeight: rootObj.s(18)
-                            from: 0; to: 100; stepSize: 1; defaultValue: 0
-                            showValueBubble: true; valueFormatter: function(v) { return Math.round(v) + "%" }
-                            value: barTabRoot.currentBarBlur
-                            backgroundColor: ThemeBackend.surface0; accentColor: ThemeBackend.blue; handleColor: ThemeBackend.text; handleBorderColor: ThemeBackend.mantle
-                            onMoved: function(v) { barTabRoot.currentBarBlur = Math.round(v); barWidthDebounceTimer.restart(); }
-                            onDragFinished: { barWidthDebounceTimer.stop(); barTabRoot.updateBarSettings(); }
-                        }
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: cavaSettings.implicitHeight + rootObj.s(28)
-                radius: rootObj.s(16)
-                color: Qt.alpha(ThemeBackend.surface0, 0.36)
-                border.width: 1
-                border.color: Qt.alpha(ThemeBackend.surface2, 0.30)
-
-                ColumnLayout {
-                    id: cavaSettings
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: rootObj.s(14)
-                    spacing: rootObj.s(10)
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: rootObj.s(2)
-                        Text { text: "CAVA visualizer"; font.family: ThemeBackend.fontFamily; font.weight: Font.DemiBold; font.pixelSize: rootObj.s(14); color: ThemeBackend.text }
-                        Text { text: "Compact bar count, thickness, and spacing controls"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10.5); color: ThemeBackend.subtext0 }
-                    }
-
-                    GridLayout {
-                        Layout.fillWidth: true
-                        columns: 3
-                        columnSpacing: rootObj.s(8)
-                        rowSpacing: rootObj.s(8)
-
-                        LeftNumberSetting {
-                            title: "Bar count"; hint: "4–24 bars"; currentValue: barTabRoot.cavaBars; minimumValue: 4; maximumValue: 24
-                            onValueCommitted: function(v) { barTabRoot.cavaBars = Math.round(v); barTabRoot.updateBarSettings(); }
-                        }
-                        LeftNumberSetting {
-                            title: "Bar width"; hint: "2–6 px"; currentValue: barTabRoot.cavaBarWidth; minimumValue: 2; maximumValue: 6
-                            onValueCommitted: function(v) { barTabRoot.cavaBarWidth = Math.round(v); barTabRoot.updateBarSettings(); }
-                        }
-                        LeftNumberSetting {
-                            title: "Bar spacing"; hint: "1–6 px"; currentValue: barTabRoot.cavaSpacing; minimumValue: 1; maximumValue: 6
-                            onValueCommitted: function(v) { barTabRoot.cavaSpacing = Math.round(v); barTabRoot.updateBarSettings(); }
-                        }
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.topMargin: rootObj.s(10)
-                Layout.bottomMargin: rootObj.s(4)
-                implicitHeight: innerPillSettings.implicitHeight + rootObj.s(28)
-                radius: rootObj.s(16)
-                color: Qt.alpha(ThemeBackend.surface0, 0.36)
-                border.width: 1
-                border.color: Qt.alpha(ThemeBackend.surface2, 0.34)
-
-                ColumnLayout {
-                    id: innerPillSettings
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: rootObj.s(14)
-                    spacing: rootObj.s(10)
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: rootObj.s(2)
-                            Text { text: "Inner pill surface"; font.family: ThemeBackend.fontFamily; font.weight: Font.DemiBold; font.pixelSize: rootObj.s(14); color: ThemeBackend.text }
-                            Text { text: "Floating capsules inside Solid and Fill surfaces, restored from v24."; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10.5); color: ThemeBackend.subtext0 }
-                        }
-                        Toggle {
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            checked: barTabRoot.innerPillEnabled
-                            accentColor: ThemeBackend.mauve; baseColor: ThemeBackend.surface1; handleColor: ThemeBackend.crust; handleOffColor: ThemeBackend.text
-                            onToggled: function(c) { barTabRoot.innerPillEnabled = c; barTabRoot.updateBarSettings(); }
-                        }
-                    }
-
-                    Switch {
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        implicitWidth: rootObj.s(420)
-                        implicitHeight: rootObj.s(34)
-                        options: ["Adaptive", "end-4", "Caelestia", "Ilyamiro"]
-                        currentIndex: Math.max(0, ["adaptive", "end4", "caelestia", "ilyamiro"].indexOf(barTabRoot.innerPillStyle))
-                        accentColor: ThemeBackend.mauve; baseColor: ThemeBackend.mantle; textColor: ThemeBackend.subtext0; activeTextColor: ThemeBackend.crust
-                        cornerRadius: ThemeBackend.borderRadius; fontPixelSize: rootObj.s(10.5)
-                        onToggled: function(index) {
-                            barTabRoot.innerPillStyle = ["adaptive", "end4", "caelestia", "ilyamiro"][Math.max(0, index)];
-                            barTabRoot.updateBarSettings();
-                        }
-                    }
-
-                    GridLayout {
-                        Layout.fillWidth: true
-                        columns: 3
-                        columnSpacing: rootObj.s(8)
-                        rowSpacing: rootObj.s(8)
-                        LeftNumberSetting { title: "Outer height"; hint: "42–58 px"; currentValue: barTabRoot.innerPillHeight; minimumValue: 42; maximumValue: 58; onValueCommitted: function(v) { barTabRoot.innerPillHeight = Math.round(v); barTabRoot.updateBarSettings(); } }
-                        LeftNumberSetting { title: "Vertical padding"; hint: "3–9 px"; currentValue: barTabRoot.innerPillPadding; minimumValue: 3; maximumValue: 9; onValueCommitted: function(v) { barTabRoot.innerPillPadding = Math.round(v); barTabRoot.updateBarSettings(); } }
-                        LeftNumberSetting { title: "Surface elevation"; hint: "0–12%"; currentValue: barTabRoot.innerPillElevation; minimumValue: 0; maximumValue: 12; onValueCommitted: function(v) { barTabRoot.innerPillElevation = Math.round(v); barTabRoot.updateBarSettings(); } }
-                        LeftNumberSetting { title: "Border visibility"; hint: "0–20%"; currentValue: barTabRoot.innerPillBorder; minimumValue: 0; maximumValue: 20; onValueCommitted: function(v) { barTabRoot.innerPillBorder = Math.round(v); barTabRoot.updateBarSettings(); } }
-                        LeftNumberSetting { title: "Outer radius"; hint: "8–24 px"; currentValue: barTabRoot.innerPillOuterRadius; minimumValue: 8; maximumValue: 24; onValueCommitted: function(v) { barTabRoot.innerPillOuterRadius = Math.round(v); barTabRoot.updateBarSettings(); } }
-                        LeftNumberSetting { title: "Inner radius"; hint: "4–20 px"; currentValue: barTabRoot.innerPillRadius; minimumValue: 4; maximumValue: 20; onValueCommitted: function(v) { barTabRoot.innerPillRadius = Math.round(v); barTabRoot.updateBarSettings(); } }
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: taskbarColumn.implicitHeight + rootObj.s(24)
-                radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.width: 0
-
-                ColumnLayout {
-                    id: taskbarColumn
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: rootObj.s(14)
-                    anchors.rightMargin: rootObj.s(14)
-                    spacing: rootObj.s(9)
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: rootObj.s(2)
-                        Text { text: "Taskbar / Dockbar"; font.family: ThemeBackend.fontFamily; font.weight: Font.DemiBold; font.pixelSize: rootObj.s(14); color: ThemeBackend.text }
-                        Text { text: "Optional bottom dock; disabled by default"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10.5); color: ThemeBackend.subtext0 }
-                    }
-
-                    RowLayout {
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        spacing: rootObj.s(18)
-                        Toggle {
-                            checked: barTabRoot.taskbarEnabled
-                            accentColor: ThemeBackend.mauve; baseColor: ThemeBackend.surface1; handleColor: ThemeBackend.crust; handleOffColor: ThemeBackend.text
-                            onToggled: function(c) { barTabRoot.taskbarEnabled = c; barTabRoot.updateTaskbarSettings(); }
-                        }
-                        Text { text: "Enable dock"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.text }
-                        Toggle {
-                            checked: barTabRoot.taskbarAutoHide
-                            accentColor: ThemeBackend.blue; baseColor: ThemeBackend.surface1; handleColor: ThemeBackend.crust; handleOffColor: ThemeBackend.text
-                            onToggled: function(c) { barTabRoot.taskbarAutoHide = c; barTabRoot.updateTaskbarSettings(); }
-                        }
-                        Text { text: "Auto-hide"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(11); color: ThemeBackend.text }
-                        NumberSelector {
-                            implicitWidth: rootObj.s(155); implicitHeight: rootObj.s(32)
-                            from: 65; to: 110; stepSize: 1; decimals: 0; value: barTabRoot.taskbarScalePercent; suffix: "%"
-                            baseColor: ThemeBackend.mantle; accentColor: ThemeBackend.mauve; buttonColor: ThemeBackend.surface1; buttonTextColor: ThemeBackend.text
-                            textColor: ThemeBackend.text; subTextColor: ThemeBackend.subtext0; borderColor: Qt.alpha(ThemeBackend.surface2, 0.55)
-                            cornerRadius: ThemeBackend.borderRadius; fontFamily: ThemeBackend.fontFamily; fontPixelSize: rootObj.s(11)
-                            onTriggered: { barTabRoot.taskbarScalePercent = Math.round(value); barTabRoot.updateTaskbarSettings(); }
-                        }
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
                 implicitHeight: barConfigCol.implicitHeight + rootObj.s(24)
                 radius: ThemeBackend.borderRadius
                 color: Qt.alpha(ThemeBackend.surface0, 0.4)
@@ -2052,12 +1772,27 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: rootObj.s(16)
+                        spacing: rootObj.s(12)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰒓"
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: rootObj.s(2)
                             Text {
+                                Layout.fillWidth: true
                                 text: I18n.t("guide.bar.config.title")
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: rootObj.s(13)

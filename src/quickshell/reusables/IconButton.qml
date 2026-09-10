@@ -50,18 +50,23 @@ Item {
             NumberAnimation { target: root; property: "popScale"; to: 1.0; duration: 420; easing.type: Easing.OutQuint }
         }
 
-        Text {
-            anchors.centerIn: parent
-            anchors.horizontalCenterOffset: root.iconOffsetX
-            anchors.verticalCenterOffset: root.iconOffsetY
-            width: Math.max(root.iconFontSize, implicitWidth)
-            height: Math.max(root.iconFontSize, implicitHeight)
-            text: root.buttonIcon
-            font.family: "Iosevka Nerd Font"
-            font.pixelSize: root.iconFontSize
-            color: root.textColor
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+        Item {
+            x: root.iconOffsetX
+            y: root.iconOffsetY
+            width: parent.width
+            height: parent.height
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.buttonIcon
+                font.family: "Iosevka Nerd Font"
+                font.pixelSize: root.iconFontSize
+                renderType: Text.NativeRendering
+                color: root.textColor
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
         }
 
         Rectangle {

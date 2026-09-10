@@ -64,13 +64,13 @@ Rectangle {
         IconButton {
             id: helpButton
             height: leftLayout.pillHeight
-            width: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 34 : 36) : (leftWidgetRoot.isCompact ? 34 : 36)
+            width: leftLayout.pillHeight
             visible: true
             iconOffsetX: 0
 
-            cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
+            cornerRadius: Math.round(leftLayout.pillHeight / 2)
             buttonIcon: "󰒓"
-            iconFontSize: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 17 : 18) : (leftWidgetRoot.isCompact ? 17 : 18)
+            iconFontSize: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 21 : 22) : (leftWidgetRoot.isCompact ? 21 : 22)
             accentColor: leftWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0
             textColor: isHoveredOrHighlighted ? ThemeBackend.text : (leftWidgetRoot.isCompact ? ThemeBackend.subtext0 : ThemeBackend.overlay2)
 

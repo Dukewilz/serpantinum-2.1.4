@@ -99,11 +99,11 @@ Rectangle {
             property real waveCenterOffset: 0.375 * waveAmp * (Math.sin(batWidgetRoot.globalWavePhase) - Math.cos(batWidgetRoot.globalWavePhase))
 
             height: sysLayout.pillHeight
-            property real targetWidth: batWidgetRoot.isDesktop ? (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 36 : 38) : (batWidgetRoot.isCompact ? 36 : 38)) : (baseContentRow.implicitWidth + (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 16 : 18) : (batWidgetRoot.isCompact ? 16 : 18)))
+            property real targetWidth: batWidgetRoot.isDesktop ? sysLayout.pillHeight : (baseContentRow.implicitWidth + (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 16 : 18) : (batWidgetRoot.isCompact ? 16 : 18)))
             width: targetWidth
             Behavior on width { NumberAnimation { duration: 480; easing.type: Easing.OutQuint } }
 
-            radius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
+            radius: batWidgetRoot.isDesktop ? Math.round(sysLayout.pillHeight / 2) : Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
             color: batWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0
             border.color: batWidgetRoot.isCompact ? ThemeBackend.surface2 : ThemeBackend.surface1
             border.width: 1

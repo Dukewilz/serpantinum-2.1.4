@@ -44,7 +44,6 @@ PanelWindow {
     property bool appsLoaded: false
 
     Component.onCompleted: {
-        PopupController.launcherWindow = launcherWindow;
         loadApps();
         appsLoaded = true;
         executeFilter("");
@@ -73,6 +72,14 @@ PanelWindow {
     Connections {
         target: (typeof DesktopEntries !== "undefined" && DesktopEntries.applications) ? DesktopEntries.applications : null
         function onValuesChanged() {
+            if (launcherWindow.isVisible) {
+                launcherWindow.loadApps();
+                launcherWindow.executeFilter(searchInput.text);
+            } else {
+                launcherWindow.appsLoaded = false;
+            }
+        }
+        function onCountChanged() {
             if (launcherWindow.isVisible) {
                 launcherWindow.loadApps();
                 launcherWindow.executeFilter(searchInput.text);
@@ -776,8 +783,7 @@ PanelWindow {
 
         y: {
             if (launcherWindow.attachEdge === "top") {
-                // Snap directly to the bottom edge of the topbar (fill hug)
-                return launcherWindow.barHeight;
+                return launcherWindow.barMatchesLauncher ? launcherWindow.barHeight : 0;
             }
             if (launcherWindow.attachEdge === "bottom") {
                 let offset = launcherWindow.barMatchesLauncher ? launcherWindow.barHeight : 0;
@@ -896,7 +902,7 @@ PanelWindow {
                 PathLine { x: 0; y: 0 }
                 PathArc {
                     x: container.dynamicCornerRadius
-                    y: 0
+                    y: container.dynamicCornerRadius
                     radiusX: container.dynamicCornerRadius
                     radiusY: container.dynamicCornerRadius
                     direction: PathArc.Counterclockwise
@@ -1004,23 +1010,10 @@ PanelWindow {
             id: bgCard
             anchors.fill: parent
             radius: container.dynamicCornerRadius
-            color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.base, 0.22) : Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
+            color: ThemeBackend.base
             border.width: launcherWindow.isCentered ? 1 : 0
             border.color: launcherWindow.isCentered ? Qt.alpha(ThemeBackend.surface2, 0.6) : "transparent"
             clip: true
-
-            AmbientBackdrop {
-                anchors.fill: parent
-                z: 0
-                cornerRadius: parent.radius
-                accentColor: ThemeBackend.mauve
-                secondaryColor: ThemeBackend.sapphire
-                tertiaryColor: ThemeBackend.teal
-                glyph: "󰍉"
-                strength: 0.82
-                active: launcherWindow.isVisible
-                animate: launcherWindow.visible
-            }
 
             Rectangle {
                 visible: launcherWindow.attachEdge === "top" && container.dynamicCornerRadius > 0.5
@@ -1119,8 +1112,7 @@ PanelWindow {
                     borderColor: Qt.alpha(ThemeBackend.surface2, 0.6)
                     cornerRadius: ThemeBackend.borderRadius
                     fontPixelSize: launcherWindow.s(12)
-                    charSpacing: 0
-                    nativeTextRendering: true
+                    charSpacing: 1
 
                     placeholderText: typeof I18n !== "undefined" ? I18n.t("applauncher.placeholder", "Start with > for a command...") : "Start with > for a command..."
                     showClearButton: true
@@ -1348,13 +1340,15 @@ PanelWindow {
                                                 id: delegateIcon
                                                 anchors.fill: parent
                                                 property bool failedLoad: false
-                                                onSourceChanged: failedLoad = false
 
                                                 visible: (!model.fontIcon || model.fontIcon === "") && source !== "" && status === Image.Ready && !failedLoad
 
                                                 source: {
                                                     if (model.fontIcon && model.fontIcon !== "") return "";
-                                                    return IconResolver.source(model.icon, model.desktopId || "");
+                                                    let ic = model.icon || "";
+                                                    if (!ic) return "";
+                                                    if (ic.startsWith("file://") || ic.startsWith("image://") || ic.startsWith("http://") || ic.startsWith("https://")) return ic;
+                                                    return ic.startsWith("/") ? "file://" + ic : "image://icon/" + ic;
                                                 }
 
                                                 sourceSize: Qt.size(64, 64)
@@ -1380,7 +1374,7 @@ PanelWindow {
                                                     if (model.isCommand) return "󰆍";
                                                     return "󰵆";
                                                 }
-                                                font.family: "Iosevka Nerd Font"
+                                                font.family: ThemeBackend.fontFamily
                                                 font.pixelSize: launcherWindow.s(16)
                                                 color: delegateRoot.isSelected ? ThemeBackend.mauve : ThemeBackend.subtext0
                                                 verticalAlignment: Text.AlignVCenter

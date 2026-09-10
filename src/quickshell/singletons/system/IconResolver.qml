@@ -18,9 +18,13 @@ QtObject {
         return Quickshell.iconPath(icon, true);
     }
     function source(icon, appId) {
-        let direct = checkedSource(icon);
-        if (direct) return direct;
+        // Window classes frequently contain a theme icon name that resolves
+        // to QuickShell's diagnostic texture. Prefer the matching desktop
+        // entry when an application identity is available, then fall back to
+        // the raw icon name.
         let entry = entryFor(appId);
-        return entry ? checkedSource(entry.icon) : "";
+        let desktopIcon = entry ? checkedSource(entry.icon) : "";
+        if (desktopIcon) return desktopIcon;
+        return checkedSource(icon);
     }
 }

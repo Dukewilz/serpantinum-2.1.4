@@ -118,18 +118,19 @@ Item {
                     readonly property string iconPart: hasIcon ? optionItem.modelData.charAt(0) : ""
                     readonly property string textPart: hasIcon ? optionItem.modelData.slice(1).trim() : optionItem.modelData
 
-                    RowLayout {
+                    Row {
                         anchors.centerIn: parent
-                        spacing: 6
+                        spacing: 4
 
                         Text {
                             visible: optionItem.hasIcon
                             text: optionItem.iconPart
                             font.family: "Iosevka Nerd Font"
-                            font.pixelSize: root.fontPixelSize + 2
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                            font.pixelSize: root.fontPixelSize
+                            renderType: Text.NativeRendering
                             color: root.currentIndex === optionItem.index ? root.activeTextColor : root.textColor
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.verticalCenterOffset: -1
                             Behavior on color { ColorAnimation { duration: 200 } }
                         }
 
@@ -139,8 +140,8 @@ Item {
                             font.family: ThemeBackend.fontFamily
                             font.weight: Font.Normal
                             font.pixelSize: root.fontPixelSize
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                            renderType: Text.NativeRendering
+                            anchors.verticalCenter: parent.verticalCenter
                             color: root.currentIndex === optionItem.index ? root.activeTextColor : root.textColor
                             Behavior on color { ColorAnimation { duration: 200 } }
                         }

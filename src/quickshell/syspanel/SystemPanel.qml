@@ -396,9 +396,13 @@ Item {
         }
 
         Text {
-            anchors.centerIn: parent
+            x: Math.round((parent.width - implicitWidth) / 2)
+            y: Math.round((parent.height - implicitHeight) / 2) - Math.round(root.s(2))
             font.family: "Iosevka Nerd Font"
             font.pixelSize: root.s(22)
+            renderType: Text.NativeRendering
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
             color: qaBtn.isActive ? ThemeBackend.crust : (qaMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
             text: qaBtn.iconText
             Behavior on color {
@@ -1123,8 +1127,13 @@ Item {
 
                             Text {
                                 anchors.centerIn: parent
-                                font.family: "Iosevka Nerd Font"
-                                font.pixelSize: root.s(24)
+                                anchors.verticalCenterOffset: -root.s(1.5)
+                                font.family: cmd === "sleep" ? ThemeBackend.fontFamily : "Iosevka Nerd Font"
+                                font.pixelSize: root.s(cmd === "sleep" ? 13 : 24)
+                                font.weight: cmd === "sleep" ? Font.Medium : Font.Normal
+                                renderType: Text.NativeRendering
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
                                 color: isDisabled ? ThemeBackend.surface2 : (actionMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
                                 text: icon
                                 Behavior on color {
@@ -1140,9 +1149,13 @@ Item {
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    y: (actionCapsule.height / 2) - (height / 2) - (actionCapsule.height - parent.height)
-                                    font.family: "Iosevka Nerd Font"
-                                    font.pixelSize: root.s(24)
+                                    y: (actionCapsule.height / 2) - (height / 2) - (actionCapsule.height - parent.height) - root.s(1.5)
+                                    font.family: cmd === "sleep" ? ThemeBackend.fontFamily : "Iosevka Nerd Font"
+                                    font.pixelSize: root.s(cmd === "sleep" ? 13 : 24)
+                                    font.weight: cmd === "sleep" ? Font.Medium : Font.Normal
+                                    renderType: Text.NativeRendering
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                     color: ThemeBackend.crust
                                     text: icon
                                 }

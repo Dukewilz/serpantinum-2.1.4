@@ -180,12 +180,29 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: rootObj.s(10)
+                        spacing: rootObj.s(12)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰍹"
+                            iconOffsetX: -2
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: rootObj.s(2)
 
                             Text {
+                                Layout.fillWidth: true
                                 text: I18n.t("guide.osd.position.title", "Screen position")
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: rootObj.s(13)
@@ -194,15 +211,12 @@ Item {
                             }
 
                             Text {
+                                Layout.fillWidth: true
                                 text: I18n.t("guide.osd.position.desc", "Select a preset position or drag on screen")
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: rootObj.s(11)
                                 color: ThemeBackend.subtext0
                             }
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
                         }
 
                         RowLayout {
@@ -319,252 +333,265 @@ Item {
                         clip: true
                         visible: implicitHeight > 0
                         opacity: isOpen ? 1.0 : 0.0
-                        implicitHeight: isOpen ? selectorInnerCol.implicitHeight : 0
+                        implicitHeight: isOpen ? selectorBox.implicitHeight : 0
 
                         Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
                         Behavior on implicitHeight { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
 
-                        ColumnLayout {
-                            id: selectorInnerCol
+                        Rectangle {
+                            id: selectorBox
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: rootObj.s(10)
+                            height: implicitHeight
+                            implicitHeight: selectorInnerCol.implicitHeight + rootObj.s(24)
+                            radius: ThemeBackend.borderRadius
+                            color: Qt.alpha(ThemeBackend.surface1, 0.35)
+                            border.width: 0
 
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: rootObj.s(6)
-
-                                ClickButton {
-                                    enabled: false
-                                    Layout.preferredWidth: rootObj.s(140)
-                                    implicitHeight: rootObj.s(26)
-                                    cornerRadius: rootObj.s(6)
-                                    horizontalPadding: rootObj.s(6)
-                                    textFontSize: rootObj.s(11)
-                                    accentColor: ThemeBackend.surface0
-                                    textColor: "#ffffff"
-                                    buttonText: "X: " + osdTabRoot.horizontalPosition + "%  Y: " + osdTabRoot.verticalPosition + "%"
-                                }
-
-                                IconButton {
-                                    size: rootObj.s(26)
-                                    cornerRadius: rootObj.s(6)
-                                    buttonIcon: "󰕰"
-                                    iconFontSize: rootObj.s(13)
-                                    accentColor: osdTabRoot.gridEnabled ? ThemeBackend.mauve : ThemeBackend.surface0
-                                    textColor: osdTabRoot.gridEnabled ? ThemeBackend.crust : ThemeBackend.text
-                                    onClicked: {
-                                        osdTabRoot.gridEnabled = !osdTabRoot.gridEnabled;
-                                    }
-                                }
-
-                                IconButton {
-                                    size: rootObj.s(26)
-                                    cornerRadius: rootObj.s(6)
-                                    buttonIcon: "󰑐"
-                                    iconFontSize: rootObj.s(13)
-                                    accentColor: ThemeBackend.surface0
-                                    textColor: ThemeBackend.text
-                                    onClicked: {
-                                        osdTabRoot.applyPosition(50, 90);
-                                    }
-                                }
-
-                                Switch {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    implicitWidth: rootObj.s(160)
-                                    implicitHeight: rootObj.s(26)
-                                    cornerRadius: rootObj.s(6)
-                                    fontPixelSize: rootObj.s(11)
-                                    options: [I18n.t("guide.osd.orientation.horizontal", "Horizontal"), I18n.t("guide.osd.orientation.vertical", "Vertical")]
-                                    currentIndex: osdTabRoot.orientation === "vertical" ? 1 : 0
-                                    accentColor: ThemeBackend.mauve
-                                    baseColor: ThemeBackend.surface0
-                                    textColor: ThemeBackend.text
-                                    activeTextColor: ThemeBackend.crust
-                                    onValueChanged: function(index, value) {
-                                        let orient = index === 1 ? "vertical" : "horizontal";
-                                        osdTabRoot.orientation = orient;
-                                        osdTabRoot.updateOsdSetting("orientation", orient);
-                                    }
-                                }
-
-                                Item {
-                                    Layout.fillWidth: true
-                                }
+                            ColumnLayout {
+                                id: selectorInnerCol
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.margins: rootObj.s(12)
+                                spacing: rootObj.s(10)
 
                                 RowLayout {
-                                    spacing: rootObj.s(8)
-                                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                    Layout.fillWidth: true
+                                    spacing: rootObj.s(6)
 
-                                    Text {
-                                        text: I18n.t("guide.common.show_bar", "Show bar")
-                                        font.family: ThemeBackend.fontFamily
-                                        font.pixelSize: rootObj.s(11)
-                                        color: ThemeBackend.subtext0
+                                    ClickButton {
+                                        enabled: false
+                                        Layout.preferredWidth: rootObj.s(140)
+                                        implicitHeight: rootObj.s(26)
+                                        cornerRadius: rootObj.s(6)
+                                        horizontalPadding: rootObj.s(6)
+                                        textFontSize: rootObj.s(11)
+                                        accentColor: ThemeBackend.surface1
+                                        textColor: "#ffffff"
+                                        buttonText: "X: " + osdTabRoot.horizontalPosition + "%  Y: " + osdTabRoot.verticalPosition + "%"
                                     }
 
-                                    Toggle {
-                                        checked: osdTabRoot.showBarBox
-                                        accentColor: ThemeBackend.mauve
-                                        baseColor: ThemeBackend.surface1
-                                        handleColor: ThemeBackend.crust
-                                        handleOffColor: ThemeBackend.text
-                                        onToggled: function(c) {
-                                            osdTabRoot.showBarBox = c;
+                                    IconButton {
+                                        size: rootObj.s(26)
+                                        cornerRadius: rootObj.s(6)
+                                        buttonIcon: "󰕰"
+                                        iconFontSize: rootObj.s(13)
+                                        accentColor: osdTabRoot.gridEnabled ? ThemeBackend.mauve : ThemeBackend.surface1
+                                        textColor: osdTabRoot.gridEnabled ? ThemeBackend.crust : ThemeBackend.text
+                                        onClicked: {
+                                            osdTabRoot.gridEnabled = !osdTabRoot.gridEnabled;
                                         }
                                     }
-                                }
-                            }
 
-                            ScreenPositionSelector {
-                                id: screenSelector
-                                Layout.fillWidth: true
-                                horizontalPosition: osdTabRoot.horizontalPosition
-                                verticalPosition: osdTabRoot.verticalPosition
-                                gridEnabled: osdTabRoot.gridEnabled
-                                showBar: osdTabRoot.showBarBox
-                                dragWidth: osdTabRoot.isVertical ? rootObj.s(43) : rootObj.s(173)
-                                dragHeight: osdTabRoot.isVertical ? rootObj.s(173) : rootObj.s(43)
+                                    IconButton {
+                                        size: rootObj.s(26)
+                                        cornerRadius: rootObj.s(6)
+                                        buttonIcon: "󰑐"
+                                        iconFontSize: rootObj.s(13)
+                                        accentColor: ThemeBackend.surface1
+                                        textColor: ThemeBackend.text
+                                        onClicked: {
+                                            osdTabRoot.applyPosition(50, 90);
+                                        }
+                                    }
 
-                                onPositionChanged: (hPos, vPos) => {
-                                    osdTabRoot.horizontalPosition = hPos;
-                                    osdTabRoot.verticalPosition = vPos;
-                                    posDropdown.currentIndex = -1;
-                                    debounceTimer.restart();
-                                }
+                                    Switch {
+                                        Layout.alignment: Qt.AlignVCenter
+                                        implicitWidth: rootObj.s(160)
+                                        implicitHeight: rootObj.s(26)
+                                        cornerRadius: rootObj.s(6)
+                                        fontPixelSize: rootObj.s(11)
+                                        options: [I18n.t("guide.osd.orientation.horizontal", "Horizontal"), I18n.t("guide.osd.orientation.vertical", "Vertical")]
+                                        currentIndex: osdTabRoot.orientation === "vertical" ? 1 : 0
+                                        accentColor: ThemeBackend.mauve
+                                        baseColor: Qt.alpha(ThemeBackend.surface0, 0.4)
+                                        textColor: ThemeBackend.text
+                                        activeTextColor: ThemeBackend.crust
+                                        onValueChanged: function(index, value) {
+                                            let orient = index === 1 ? "vertical" : "horizontal";
+                                            osdTabRoot.orientation = orient;
+                                            osdTabRoot.updateOsdSetting("orientation", orient);
+                                        }
+                                    }
 
-                                onDragFinished: {
-                                    debounceTimer.stop();
-                                    posDropdown.currentIndex = -1;
-                                    let current = JSON.parse(JSON.stringify(Config.getSetting("osd", defaultOsdSettings) || defaultOsdSettings));
-                                    current.horizontalPosition = osdTabRoot.horizontalPosition;
-                                    current.verticalPosition = osdTabRoot.verticalPosition;
-                                    Config.setSetting("osd", current);
-                                    osdTabRoot.osdSettings = current;
-                                }
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: rootObj.s(11)
-                                    color: ThemeBackend.base
-                                    border.width: 1
-                                    border.color: ThemeBackend.surface0
-                                    clip: true
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
 
                                     RowLayout {
-                                        visible: !osdTabRoot.isVertical
-                                        anchors.fill: parent
-                                        anchors.leftMargin: rootObj.s(7)
-                                        anchors.rightMargin: rootObj.s(12)
-                                        spacing: rootObj.s(9)
+                                        spacing: rootObj.s(8)
+                                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
-                                        Rectangle {
-                                            Layout.preferredWidth: parent.height - rootObj.s(10)
-                                            Layout.preferredHeight: parent.height - rootObj.s(10)
-                                            Layout.alignment: Qt.AlignVCenter
-                                            radius: rootObj.s(7)
-                                            color: ThemeBackend.surface1
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "󰕾"
-                                                font.family: "Iosevka Nerd Font"
-                                                font.pixelSize: rootObj.s(18)
-                                                color: Qt.lighter(ThemeBackend.sapphire, 1.5)
-                                            }
+                                        Text {
+                                            text: I18n.t("guide.common.show_bar", "Show bar")
+                                            font.family: ThemeBackend.fontFamily
+                                            font.pixelSize: rootObj.s(11)
+                                            color: ThemeBackend.subtext0
                                         }
 
-                                        Item {
-                                            Layout.fillWidth: true
-                                            Layout.fillHeight: true
-
-                                            Rectangle {
-                                                id: trackBar
-                                                anchors.left: parent.left
-                                                anchors.right: parent.right
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                height: rootObj.s(9)
-                                                radius: height / 2
-                                                color: ThemeBackend.surface1
-
-                                                Rectangle {
-                                                    anchors.left: parent.left
-                                                    anchors.top: parent.top
-                                                    anchors.bottom: parent.bottom
-                                                    width: parent.width * 0.65
-                                                    radius: parent.radius
-                                                    color: Qt.lighter(ThemeBackend.sapphire, 1.5)
-                                                }
-
-                                                Rectangle {
-                                                    x: (parent.width * 0.65) - (width / 2)
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    width: rootObj.s(16)
-                                                    height: rootObj.s(16)
-                                                    radius: width / 2
-                                                    color: Qt.lighter(ThemeBackend.sapphire, 1.3)
-                                                    border.width: 1
-                                                    border.color: Qt.rgba(0, 0, 0, 0.25)
-                                                }
+                                        Toggle {
+                                            checked: osdTabRoot.showBarBox
+                                            accentColor: ThemeBackend.mauve
+                                            baseColor: ThemeBackend.surface1
+                                            handleColor: ThemeBackend.crust
+                                            handleOffColor: ThemeBackend.text
+                                            onToggled: function(c) {
+                                                osdTabRoot.showBarBox = c;
                                             }
                                         }
                                     }
+                                }
 
-                                    ColumnLayout {
-                                        visible: osdTabRoot.isVertical
+                                ScreenPositionSelector {
+                                    id: screenSelector
+                                    Layout.fillWidth: true
+                                    horizontalPosition: osdTabRoot.horizontalPosition
+                                    verticalPosition: osdTabRoot.verticalPosition
+                                    gridEnabled: osdTabRoot.gridEnabled
+                                    showBar: osdTabRoot.showBarBox
+                                    dragWidth: osdTabRoot.isVertical ? rootObj.s(43) : rootObj.s(173)
+                                    dragHeight: osdTabRoot.isVertical ? rootObj.s(173) : rootObj.s(43)
+
+                                    onPositionChanged: (hPos, vPos) => {
+                                        osdTabRoot.horizontalPosition = hPos;
+                                        osdTabRoot.verticalPosition = vPos;
+                                        posDropdown.currentIndex = -1;
+                                        debounceTimer.restart();
+                                    }
+
+                                    onDragFinished: {
+                                        debounceTimer.stop();
+                                        posDropdown.currentIndex = -1;
+                                        let current = JSON.parse(JSON.stringify(Config.getSetting("osd", defaultOsdSettings) || defaultOsdSettings));
+                                        current.horizontalPosition = osdTabRoot.horizontalPosition;
+                                        current.verticalPosition = osdTabRoot.verticalPosition;
+                                        Config.setSetting("osd", current);
+                                        osdTabRoot.osdSettings = current;
+                                    }
+
+                                    Rectangle {
                                         anchors.fill: parent
-                                        anchors.topMargin: rootObj.s(7)
-                                        anchors.bottomMargin: rootObj.s(12)
-                                        spacing: rootObj.s(9)
+                                        radius: rootObj.s(11)
+                                        color: ThemeBackend.base
+                                        border.width: 1
+                                        border.color: ThemeBackend.surface0
+                                        clip: true
 
-                                        Rectangle {
-                                            Layout.preferredWidth: parent.width - rootObj.s(10)
-                                            Layout.preferredHeight: parent.width - rootObj.s(10)
-                                            Layout.alignment: Qt.AlignHCenter
-                                            radius: rootObj.s(7)
-                                            color: ThemeBackend.surface1
+                                        RowLayout {
+                                            visible: !osdTabRoot.isVertical
+                                            anchors.fill: parent
+                                            anchors.leftMargin: rootObj.s(7)
+                                            anchors.rightMargin: rootObj.s(12)
+                                            spacing: rootObj.s(9)
 
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "󰕾"
-                                                font.family: "Iosevka Nerd Font"
-                                                font.pixelSize: rootObj.s(18)
-                                                color: Qt.lighter(ThemeBackend.sapphire, 1.5)
+                                            Rectangle {
+                                                Layout.preferredWidth: parent.height - rootObj.s(10)
+                                                Layout.preferredHeight: parent.height - rootObj.s(10)
+                                                Layout.alignment: Qt.AlignVCenter
+                                                radius: rootObj.s(7)
+                                                color: ThemeBackend.surface1
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "󰕾"
+                                                    font.family: "Iosevka Nerd Font"
+                                                    font.pixelSize: rootObj.s(18)
+                                                    color: Qt.lighter(ThemeBackend.sapphire, 1.5)
+                                                }
+                                            }
+
+                                            Item {
+                                                Layout.fillWidth: true
+                                                Layout.fillHeight: true
+
+                                                Rectangle {
+                                                    id: trackBar
+                                                    anchors.left: parent.left
+                                                    anchors.right: parent.right
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    height: rootObj.s(9)
+                                                    radius: height / 2
+                                                    color: ThemeBackend.surface1
+
+                                                    Rectangle {
+                                                        anchors.left: parent.left
+                                                        anchors.top: parent.top
+                                                        anchors.bottom: parent.bottom
+                                                        width: parent.width * 0.65
+                                                        radius: parent.radius
+                                                        color: Qt.lighter(ThemeBackend.sapphire, 1.5)
+                                                    }
+
+                                                    Rectangle {
+                                                        x: (parent.width * 0.65) - (width / 2)
+                                                        anchors.verticalCenter: parent.verticalCenter
+                                                        width: rootObj.s(16)
+                                                        height: rootObj.s(16)
+                                                        radius: width / 2
+                                                        color: Qt.lighter(ThemeBackend.sapphire, 1.3)
+                                                        border.width: 1
+                                                        border.color: Qt.rgba(0, 0, 0, 0.25)
+                                                    }
+                                                }
                                             }
                                         }
 
-                                        Item {
-                                            Layout.fillWidth: true
-                                            Layout.fillHeight: true
+                                        ColumnLayout {
+                                            visible: osdTabRoot.isVertical
+                                            anchors.fill: parent
+                                            anchors.topMargin: rootObj.s(7)
+                                            anchors.bottomMargin: rootObj.s(12)
+                                            spacing: rootObj.s(9)
 
                                             Rectangle {
-                                                anchors.top: parent.top
-                                                anchors.bottom: parent.bottom
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                width: rootObj.s(9)
-                                                radius: width / 2
+                                                Layout.preferredWidth: parent.width - rootObj.s(10)
+                                                Layout.preferredHeight: parent.width - rootObj.s(10)
+                                                Layout.alignment: Qt.AlignHCenter
+                                                radius: rootObj.s(7)
                                                 color: ThemeBackend.surface1
 
-                                                Rectangle {
-                                                    anchors.left: parent.left
-                                                    anchors.right: parent.right
-                                                    anchors.bottom: parent.bottom
-                                                    height: parent.height * 0.65
-                                                    radius: parent.radius
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "󰕾"
+                                                    font.family: "Iosevka Nerd Font"
+                                                    font.pixelSize: rootObj.s(18)
                                                     color: Qt.lighter(ThemeBackend.sapphire, 1.5)
                                                 }
+                                            }
+
+                                            Item {
+                                                Layout.fillWidth: true
+                                                Layout.fillHeight: true
 
                                                 Rectangle {
-                                                    y: parent.height - (parent.height * 0.65) - (height / 2)
+                                                    anchors.top: parent.top
+                                                    anchors.bottom: parent.bottom
                                                     anchors.horizontalCenter: parent.horizontalCenter
-                                                    width: rootObj.s(16)
-                                                    height: rootObj.s(16)
+                                                    width: rootObj.s(9)
                                                     radius: width / 2
-                                                    color: Qt.lighter(ThemeBackend.sapphire, 1.3)
-                                                    border.width: 1
-                                                    border.color: Qt.rgba(0, 0, 0, 0.25)
+                                                    color: ThemeBackend.surface1
+
+                                                    Rectangle {
+                                                        anchors.left: parent.left
+                                                        anchors.right: parent.right
+                                                        anchors.bottom: parent.bottom
+                                                        height: parent.height * 0.65
+                                                        radius: parent.radius
+                                                        color: Qt.lighter(ThemeBackend.sapphire, 1.5)
+                                                    }
+
+                                                    Rectangle {
+                                                        y: parent.height - (parent.height * 0.65) - (height / 2)
+                                                        anchors.horizontalCenter: parent.horizontalCenter
+                                                        width: rootObj.s(16)
+                                                        height: rootObj.s(16)
+                                                        radius: width / 2
+                                                        color: Qt.lighter(ThemeBackend.sapphire, 1.3)
+                                                        border.width: 1
+                                                        border.color: Qt.rgba(0, 0, 0, 0.25)
+                                                    }
                                                 }
                                             }
                                         }
@@ -599,10 +626,24 @@ Item {
                         anchors.leftMargin: rootObj.s(14)
                         anchors.rightMargin: rootObj.s(14)
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: rootObj.s(8)
+                        spacing: rootObj.s(10)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰘲"
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         Text {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             text: I18n.t("guide.osd.capslock.title", "Show on Caps Lock")
                             font.family: ThemeBackend.fontFamily
                             font.pixelSize: rootObj.s(12)
@@ -658,10 +699,24 @@ Item {
                         anchors.leftMargin: rootObj.s(14)
                         anchors.rightMargin: rootObj.s(14)
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: rootObj.s(8)
+                        spacing: rootObj.s(10)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰎤"
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         Text {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             text: I18n.t("guide.osd.numlock.title", "Show on Num Lock")
                             font.family: ThemeBackend.fontFamily
                             font.pixelSize: rootObj.s(12)
@@ -717,10 +772,24 @@ Item {
                         anchors.leftMargin: rootObj.s(14)
                         anchors.rightMargin: rootObj.s(14)
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: rootObj.s(8)
+                        spacing: rootObj.s(10)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰀝"
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
+                        }
 
                         Text {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             text: I18n.t("guide.osd.airplane.title", "Show on Airplane Mode")
                             font.family: ThemeBackend.fontFamily
                             font.pixelSize: rootObj.s(12)
@@ -772,18 +841,36 @@ Item {
                     anchors.leftMargin: rootObj.s(14)
                     anchors.rightMargin: rootObj.s(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(16)
+                    spacing: rootObj.s(12)
+
+                    IconButton {
+                        enabled: false
+                        size: rootObj.s(32)
+                        Layout.preferredWidth: rootObj.s(32)
+                        Layout.preferredHeight: rootObj.s(32)
+                        Layout.alignment: Qt.AlignVCenter
+                        cornerRadius: ThemeBackend.borderRadius
+                        buttonIcon: "󱂬"
+                        iconFontSize: rootObj.s(16)
+                        accentColor: ThemeBackend.surface0
+                        textColor: "#ffffff"
+                    }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: rootObj.s(2)
+
                         Text {
+                            Layout.fillWidth: true
                             text: I18n.t("guide.osd.attach_bar.title", "Attach to the bar in solid/fill style")
                             font.family: ThemeBackend.fontFamily
                             font.pixelSize: rootObj.s(13)
                             color: ThemeBackend.text
                         }
+
                         Text {
+                            Layout.fillWidth: true
                             text: I18n.t("guide.osd.attach_bar.desc", "Snap OSD popups to the status bar in solid or fill mode. When disabled, the OSD always stays in the configured position.")
                             font.family: ThemeBackend.fontFamily
                             font.pixelSize: rootObj.s(11)

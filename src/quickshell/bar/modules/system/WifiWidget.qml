@@ -19,91 +19,83 @@ Rectangle {
     property bool isGrouped: false
     property bool isCompact: isGrouped || (isSolid && distinctPills)
     property bool isDesktop: false
-    property string ethStatus: "Off"
+    property string ethStatus: "Ethernet"
     property string wifiStatus: "Off"
     property string wifiIcon: "󰤮"
     property string wifiSsid: ""
     property bool isWifiOn: Networking.wifiEnabled
-    property bool ethConnected: ethStatus === "Connected"
-    property bool hasEthDevice: ethDevice !== null
+    property bool showEthernet: ethStatus === "Connected" || (isDesktop && !isWifiOn)
     property real targetX: 0
-    property bool showLayout: false
+    property bool showLayout: moduleActive && (!barWindow || (barWindow.isStartupReady && barWindow.isDataReady))
     property alias wifiPill: wifiPill
 
     property var ethDevice: null
     property var wifiDevice: null
+
+    Component.onCompleted: {
+        findDevices();
+        updateNetworkData();
+    }
 
     onModuleActiveChanged: {
         if (!moduleActive) {
             chassisDetector.running = false;
         } else {
             chassisDetector.running = true;
+            findDevices();
             updateNetworkData();
-        }
-    }
-
-    Item {
-        visible: false
-        Connections {
-            target: Networking
-            ignoreUnknownSignals: true
-            function onWifiEnabledChanged() { updateNetworkData(); }
-        }
-        Repeater {
-            id: netDeviceRepeater
-            model: Networking.devices
-            Item {
-                property var device: modelData
-                Component.onCompleted: {
-                    if (device.type === DeviceType.Wired) {
-                        wifiWidgetRoot.ethDevice = device;
-                    } else if (device.type === DeviceType.Wifi) {
-                        wifiWidgetRoot.wifiDevice = device;
-                    }
-                    wifiWidgetRoot.updateNetworkData();
-                }
-                Connections {
-                    target: device || null
-                    ignoreUnknownSignals: true
-                    function onStateChanged() { wifiWidgetRoot.updateNetworkData(); }
-                    function onConnectedChanged() { wifiWidgetRoot.updateNetworkData(); }
-                }
-                Connections {
-                    target: (device && device.type === DeviceType.Wired) ? device : null
-                    ignoreUnknownSignals: true
-                    function onHasLinkChanged() { wifiWidgetRoot.updateNetworkData(); }
-                }
-            }
-        }
-        Repeater {
-            id: wifiNetworkRepeater
-            model: wifiWidgetRoot.wifiDevice ? wifiWidgetRoot.wifiDevice.networks : null
-            Item {
-                property var network: modelData
-                Connections {
-                    target: network || null
-                    ignoreUnknownSignals: true
-                    function onSignalStrengthChanged() { wifiWidgetRoot.updateNetworkData(); }
-                    function onStateChanged() { wifiWidgetRoot.updateNetworkData(); }
-                    function onConnectedChanged() { wifiWidgetRoot.updateNetworkData(); }
-                }
-            }
         }
     }
 
     Process {
         id: chassisDetector
         running: wifiWidgetRoot.moduleActive
-        command: ["bash", "-c", "hostnamectl chassis 2>/dev/null || echo desktop"]
-        stdout: SplitParser {
-            onRead: (data) => {
-                let t = data.toLowerCase().trim();
-                wifiWidgetRoot.isDesktop = (t === "desktop" || t === "server" || t === "tower" || t === "");
+        command: ["bash", "-c", "if ls /sys/class/power_supply/BAT* 1> /dev/null 2>&1; then echo 'laptop'; else echo 'desktop'; fi"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                isDesktop = (this.text.trim() === "desktop");
             }
         }
     }
 
+    function isEthDevice(dev) {
+        return !!dev && dev.type === DeviceType.Wired;
+    }
+
+    function isWifiDevice(dev) {
+        return !!dev && dev.type === DeviceType.Wifi;
+    }
+
+    function findDevices() {
+        if (!Networking || !Networking.devices) return;
+        let devs = Networking.devices.values || Networking.devices;
+        let count = devs.length !== undefined ? devs.length : (devs.count !== undefined ? devs.count : 0);
+        for (let i = 0; i < count; i++) {
+            let d = devs[i] !== undefined ? devs[i] : (devs.get ? devs.get(i) : null);
+            if (!d) continue;
+            if (!wifiWidgetRoot.ethDevice && isEthDevice(d)) {
+                wifiWidgetRoot.ethDevice = d;
+            } else if (!wifiWidgetRoot.wifiDevice && isWifiDevice(d)) {
+                wifiWidgetRoot.wifiDevice = d;
+            }
+        }
+    }
+
+    function getWifiNetworksList() {
+        if (!wifiDevice || !wifiDevice.networks) return [];
+        let nets = wifiDevice.networks.values || wifiDevice.networks;
+        let list = [];
+        let count = nets.length !== undefined ? nets.length : (nets.count !== undefined ? nets.count : 0);
+        for (let i = 0; i < count; i++) {
+            let n = nets[i] !== undefined ? nets[i] : (nets.get ? nets.get(i) : null);
+            if (n) list.push(n);
+        }
+        return list;
+    }
+
     function updateNetworkData() {
+        findDevices();
+
         let isWifiEnabled = Networking.wifiEnabled;
         wifiStatus = isWifiEnabled ? "Enabled" : "Off";
 
@@ -111,12 +103,12 @@ Rectangle {
             if (ethDevice.connected) {
                 ethStatus = "Connected";
             } else if (ethDevice.hasLink) {
-                ethStatus = "Link";
+                ethStatus = "Disconnected";
             } else {
-                ethStatus = "Off";
+                ethStatus = "Ethernet";
             }
         } else {
-            ethStatus = "Off";
+            ethStatus = "Ethernet";
         }
 
         if (!isWifiEnabled) {
@@ -126,13 +118,12 @@ Rectangle {
         }
 
         let connectedNet = null;
-        if (wifiDevice && wifiDevice.networks) {
-            for (let i = 0; i < wifiNetworkRepeater.count; i++) {
-                let item = wifiNetworkRepeater.itemAt(i);
-                if (item && item.network && item.network.connected) {
-                    connectedNet = item.network;
-                    break;
-                }
+        let netList = getWifiNetworksList();
+        for (let i = 0; i < netList.length; i++) {
+            let n = netList[i];
+            if (n && n.connected) {
+                connectedNet = n;
+                break;
             }
         }
 
@@ -147,6 +138,102 @@ Rectangle {
         } else {
             wifiSsid = "";
             wifiIcon = "󰤯";
+        }
+    }
+
+    Item {
+        visible: false
+
+        Connections {
+            target: Networking
+            ignoreUnknownSignals: true
+            function onWifiEnabledChanged() { wifiWidgetRoot.updateNetworkData(); }
+            function onDevicesChanged() {
+                wifiWidgetRoot.findDevices();
+                wifiWidgetRoot.updateNetworkData();
+            }
+        }
+
+        Connections {
+            target: Networking.devices || null
+            ignoreUnknownSignals: true
+            function onObjectInsertedPost(object, index) {
+                wifiWidgetRoot.findDevices();
+                wifiWidgetRoot.updateNetworkData();
+            }
+            function onObjectRemovedPost(object, index) {
+                wifiWidgetRoot.findDevices();
+                wifiWidgetRoot.updateNetworkData();
+            }
+            function onCountChanged() {
+                wifiWidgetRoot.findDevices();
+                wifiWidgetRoot.updateNetworkData();
+            }
+        }
+
+        Connections {
+            target: wifiWidgetRoot.ethDevice || null
+            ignoreUnknownSignals: true
+            function onConnectedChanged() { wifiWidgetRoot.updateNetworkData(); }
+            function onStateChanged() { wifiWidgetRoot.updateNetworkData(); }
+            function onHasLinkChanged() { wifiWidgetRoot.updateNetworkData(); }
+        }
+
+        Connections {
+            target: wifiWidgetRoot.wifiDevice || null
+            ignoreUnknownSignals: true
+            function onConnectedChanged() { wifiWidgetRoot.updateNetworkData(); }
+            function onStateChanged() { wifiWidgetRoot.updateNetworkData(); }
+            function onNetworksChanged() { wifiWidgetRoot.updateNetworkData(); }
+        }
+
+        Connections {
+            target: (wifiWidgetRoot.wifiDevice && wifiWidgetRoot.wifiDevice.networks) ? wifiWidgetRoot.wifiDevice.networks : null
+            ignoreUnknownSignals: true
+            function onObjectInsertedPost(object, index) { wifiWidgetRoot.updateNetworkData(); }
+            function onObjectRemovedPost(object, index) { wifiWidgetRoot.updateNetworkData(); }
+            function onCountChanged() { wifiWidgetRoot.updateNetworkData(); }
+        }
+
+        Repeater {
+            id: netDeviceRepeater
+            model: Networking.devices
+            Item {
+                property var device: modelData
+                Component.onCompleted: {
+                    if (device && device.type === DeviceType.Wired) {
+                        wifiWidgetRoot.ethDevice = device;
+                    } else if (device && device.type === DeviceType.Wifi) {
+                        wifiWidgetRoot.wifiDevice = device;
+                    }
+                    wifiWidgetRoot.updateNetworkData();
+                }
+                Connections {
+                    target: device || null
+                    ignoreUnknownSignals: true
+                    function onStateChanged() { wifiWidgetRoot.updateNetworkData(); }
+                    function onConnectedChanged() { wifiWidgetRoot.updateNetworkData(); }
+                    function onHasLinkChanged() { wifiWidgetRoot.updateNetworkData(); }
+                }
+            }
+        }
+
+        Repeater {
+            id: wifiNetworkRepeater
+            model: wifiWidgetRoot.wifiDevice ? wifiWidgetRoot.wifiDevice.networks : null
+            Item {
+                property var network: modelData
+                Component.onCompleted: wifiWidgetRoot.updateNetworkData()
+                Connections {
+                    target: network || null
+                    ignoreUnknownSignals: true
+                    function onSignalStrengthChanged() { wifiWidgetRoot.updateNetworkData(); }
+                    function onStateChanged() { wifiWidgetRoot.updateNetworkData(); }
+                    function onConnectedChanged() { wifiWidgetRoot.updateNetworkData(); }
+                    function onNameChanged() { wifiWidgetRoot.updateNetworkData(); }
+                    function onSsidChanged() { wifiWidgetRoot.updateNetworkData(); }
+                }
+            }
         }
     }
 
@@ -169,73 +256,28 @@ Rectangle {
     visible: opacity > 0
     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
-    Timer {
-        running: wifiWidgetRoot.moduleActive && barWindow && barWindow.isStartupReady && barWindow.isDataReady
-        interval: 100
-        onTriggered: wifiWidgetRoot.showLayout = true
-    }
-
     transform: Translate {
-        x: wifiWidgetRoot.showLayout ? 0 : (barWindow ? barWindow.s(60) : 60)
+        x: wifiWidgetRoot.showLayout ? 0 : barWindow.s(60)
         Behavior on x { NumberAnimation { duration: 800; easing.type: Easing.OutQuint } }
     }
 
     Row {
         id: sysLayout
         anchors.centerIn: parent
-        spacing: barWindow ? barWindow.s(isCompact ? 3 : 4) : 4
         property int pillHeight: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 28 : 30) : (wifiWidgetRoot.isCompact ? 28 : 30)
 
         ClickButton {
-            id: ethPill
-            property bool initAnimTrigger: false
-            property bool isEthActive: wifiWidgetRoot.ethConnected
-
-            visible: wifiWidgetRoot.hasEthDevice
-            height: sysLayout.pillHeight
-            maxWidth: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 130 : 140) : (wifiWidgetRoot.isCompact ? 130 : 140)
-            cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
-            horizontalPadding: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 10 : 12) : (wifiWidgetRoot.isCompact ? 10 : 12)
-            buttonIcon: "󰈀"
-            iconFontSize: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 17 : 18) : (wifiWidgetRoot.isCompact ? 17 : 18)
-            buttonText: wifiWidgetRoot.ethStatus
-            textFontSize: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 11 : 12) : (wifiWidgetRoot.isCompact ? 11 : 12)
-            accentColor: isEthActive
-                ? (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.teal, 1.08) : ThemeBackend.teal)
-                : (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0)
-            textColor: isEthActive ? ThemeBackend.base : (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.text, 1.05) : ThemeBackend.text)
-
-            property real targetWidth: visible ? implicitWidth : 0
-            width: targetWidth
-            Behavior on width { NumberAnimation { duration: 480; easing.type: Easing.OutQuint } }
-
-            Timer {
-                running: wifiWidgetRoot.moduleActive && wifiWidgetRoot.showLayout && !ethPill.initAnimTrigger
-                interval: 80
-                onTriggered: ethPill.initAnimTrigger = true
-            }
-            opacity: initAnimTrigger && visible ? 1.0 : 0.0
-            transform: Translate {
-                y: ethPill.initAnimTrigger ? 0 : (barWindow ? barWindow.s(15) : 15)
-                Behavior on y { NumberAnimation { duration: 620; easing.type: Easing.OutQuint } }
-            }
-            Behavior on opacity { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
-
-            onClicked: PopupController.handleCommand("toggle", "network", "ethernet")
-        }
-
-        ClickButton {
             id: wifiPill
-            property bool initAnimTrigger: false
-            property bool isActive: isWifiOn
+            property bool initAnimTrigger: wifiWidgetRoot.showLayout
+            property bool isActive: showEthernet ? (ethStatus === "Connected") : isWifiOn
 
             height: sysLayout.pillHeight
             maxWidth: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 156 : 160) : (wifiWidgetRoot.isCompact ? 156 : 160)
             cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
             horizontalPadding: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 10 : 12) : (wifiWidgetRoot.isCompact ? 10 : 12)
-            buttonIcon: wifiIcon
-            iconFontSize: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 17 : 18) : (wifiWidgetRoot.isCompact ? 17 : 18)
-            buttonText: isWifiOn ? (wifiSsid !== "" ? wifiSsid : "On") : "Off"
+            buttonIcon: showEthernet ? "󰈀" : wifiIcon
+            iconFontSize: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 14 : 15) : (wifiWidgetRoot.isCompact ? 14 : 15)
+            buttonText: showEthernet ? ethStatus : ((isWifiOn ? (wifiSsid !== "" ? wifiSsid : "On") : "Off"))
             textFontSize: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 11 : 12) : (wifiWidgetRoot.isCompact ? 11 : 12)
             accentColor: isActive ? (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.blue, 1.08) : ThemeBackend.blue) : (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0)
             textColor: isActive ? ThemeBackend.base : (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.text, 1.05) : ThemeBackend.text)
@@ -244,19 +286,11 @@ Rectangle {
             width: targetWidth
             Behavior on width { NumberAnimation { duration: 480; easing.type: Easing.OutQuint } }
 
-            Timer {
-                running: wifiWidgetRoot.moduleActive && wifiWidgetRoot.showLayout && !wifiPill.initAnimTrigger
-                interval: 130
-                onTriggered: wifiPill.initAnimTrigger = true
-            }
             opacity: initAnimTrigger ? 1.0 : 0.0
-            transform: Translate {
-                y: wifiPill.initAnimTrigger ? 0 : (barWindow ? barWindow.s(15) : 15)
-                Behavior on y { NumberAnimation { duration: 620; easing.type: Easing.OutQuint } }
-            }
+            transform: Translate { y: wifiPill.initAnimTrigger ? 0 : barWindow.s(15); Behavior on y { NumberAnimation { duration: 620; easing.type: Easing.OutQuint } } }
             Behavior on opacity { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
 
-            onClicked: PopupController.handleCommand("toggle", "network", "wifi")
+            onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle network wifi"])
         }
     }
 }

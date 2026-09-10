@@ -59,8 +59,8 @@ Scope {
         return entry && entry.icon ? String(entry.icon) : "";
     }
 
-    function resolvedIconSource(iconName) {
-        return IconResolver.source(iconName, iconName);
+    function resolvedIconSource(iconName, desktopId) {
+        return IconResolver.source(iconName, desktopId || iconName);
     }
 
     function favoriteForClient(client) {
@@ -278,7 +278,7 @@ Scope {
                         id: launcherMouse
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: Quickshell.execDetached(["bash", Caching.serpantinumDir + "/scripts/qs_manager.sh", "toggle", "applauncher"])
+                        onClicked: PopupController.handleCommand("toggle", "launcher", "")
                     }
                 }
 
@@ -301,7 +301,7 @@ Scope {
                             id: favoriteIcon
                             anchors.centerIn: parent
                             width: root.d(27); height: root.d(27)
-                            source: root.resolvedIconSource(modelData.icon)
+                            source: root.resolvedIconSource(modelData.icon, modelData.desktop)
                             visible: source !== "" && status === Image.Ready
                             fillMode: Image.PreserveAspectFit
                             sourceSize: Qt.size(root.d(32), root.d(32))
@@ -342,7 +342,7 @@ Scope {
                             id: runningIcon
                             anchors.centerIn: parent
                             width: root.d(27); height: root.d(27)
-                            source: root.resolvedIconSource(modelData.icon)
+                            source: root.resolvedIconSource(modelData.icon, modelData.key)
                             visible: source !== "" && status === Image.Ready
                             fillMode: Image.PreserveAspectFit
                             sourceSize: Qt.size(root.d(32), root.d(32))

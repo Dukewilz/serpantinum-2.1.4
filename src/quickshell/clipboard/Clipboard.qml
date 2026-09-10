@@ -864,7 +864,7 @@ PanelWindow {
                 y: 0
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -873,7 +873,7 @@ PanelWindow {
                 y: 0
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -882,7 +882,7 @@ PanelWindow {
                 y: parent.height - container.dynamicCornerRadius
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -891,7 +891,7 @@ PanelWindow {
                 y: parent.height - container.dynamicCornerRadius
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -900,7 +900,7 @@ PanelWindow {
                 y: 0
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -909,7 +909,7 @@ PanelWindow {
                 y: parent.height - container.dynamicCornerRadius
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -918,7 +918,7 @@ PanelWindow {
                 y: 0
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -927,7 +927,7 @@ PanelWindow {
                 y: parent.height - container.dynamicCornerRadius
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Item {
