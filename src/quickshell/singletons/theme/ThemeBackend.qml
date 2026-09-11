@@ -15,9 +15,23 @@ Item {
     property real uiBackgroundOpacity: 0.96
     property real uiBackgroundBlur: 0.68
     property bool uiBackgroundUseWallpaper: false
+    property string uiBackgroundSourceMode: "theme"
+    property string uiBackgroundCustomPath: ""
     property real uiAmbientStrength: 1.0
     property int wallpaperRevision: 0
     readonly property string wallpaperSnapshotPath: Caching.getCacheDir("wallpaper") + "/current_wallpaper.png"
+    readonly property string uiBackgroundImagePath: {
+        if (!uiBackgroundUseWallpaper) return "";
+        if (uiBackgroundSourceMode === "custom" && uiBackgroundCustomPath !== "") {
+            let path = String(uiBackgroundCustomPath).trim();
+            if (path.startsWith("file://")) path = path.slice(7);
+            try { return decodeURIComponent(path); } catch (e) { return path; }
+        }
+        return wallpaperSnapshotPath;
+    }
+    readonly property string uiBackgroundImageSource: uiBackgroundImagePath !== ""
+        ? ("file://" + uiBackgroundImagePath + "?v=" + wallpaperRevision)
+        : ""
     property int clampedBorderRadius: {
         const r = borderRadius;
         return Math.floor(
@@ -60,32 +74,21 @@ Item {
     property var bundledNames: []
     property string activeFontPath: ""
 
+    // One watcher is shared by every Bar and popup surface.  The previous v24
+    // implementation created a watcher and decoder per cached popup.
     FileView {
-        id: wallpaperSnapshotWatcher
-        path: root.wallpaperSnapshotPath
+        id: uiBackgroundImageWatcher
+        path: root.uiBackgroundImagePath
         watchChanges: true
-        onFileChanged: {
-            wallpaperSnapshotWatcher.reload();
-            wallpaperRevisionDebounce.restart();
-        }
+        onFileChanged: wallpaperRevisionDebounce.restart()
         onLoaded: wallpaperRevisionDebounce.restart()
     }
 
     Timer {
         id: wallpaperRevisionDebounce
-        interval: 60
+        interval: 100
         repeat: false
         onTriggered: root.wallpaperRevision++
-    }
-
-    Connections {
-        target: (typeof Wallpaper !== "undefined") ? Wallpaper : null
-        function onWallpaperChanged() {
-            wallpaperRevisionDebounce.restart();
-        }
-        function onWallpaperRevisionChanged() {
-            root.wallpaperRevision++;
-        }
     }
 
     onFontFamilyChanged: {
@@ -221,10 +224,15 @@ Item {
         let opacityValue = uiBg.opacity !== undefined ? uiBg.opacity : 96;
         let blurValue = uiBg.blur !== undefined ? uiBg.blur : 68;
         let ambientValue = uiBg.ambientStrength !== undefined ? uiBg.ambientStrength : 100;
+        let sourceMode = uiBg.sourceMode !== undefined ? String(uiBg.sourceMode) : (uiBg.useWallpaper === true ? "current" : "theme");
+        if (["theme", "current", "custom"].indexOf(sourceMode) < 0) sourceMode = "theme";
+        let customPath = uiBg.customPath !== undefined ? String(uiBg.customPath).trim() : "";
         root.uiBackgroundOpacity = Math.max(0.35, Math.min(1.0, opacityValue / 100.0));
         root.uiBackgroundBlur = Math.max(0.0, Math.min(1.0, blurValue / 100.0));
-        root.uiBackgroundUseWallpaper = uiBg.useWallpaper === true;
-        root.uiAmbientStrength = Math.max(0.35, Math.min(2.0, ambientValue / 100.0));
+        root.uiBackgroundSourceMode = sourceMode;
+        root.uiBackgroundCustomPath = customPath;
+        root.uiBackgroundUseWallpaper = sourceMode === "current" || (sourceMode === "custom" && customPath !== "");
+        root.uiAmbientStrength = Math.max(0.0, Math.min(2.0, ambientValue / 100.0));
     }
 
     function updateAppearance() {
@@ -250,6 +258,7 @@ Item {
         target: Config
         function onSettingsLoaded() {
             root.updateColors();
+            root.updateAppearance();
         }
     }
 

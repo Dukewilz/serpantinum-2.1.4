@@ -18,13 +18,12 @@ Rectangle {
     property bool moduleActive: true
     property bool isGrouped: false
     property bool isCompact: isGrouped || (isSolid && distinctPills)
-    property bool isDesktop: false
     property string ethStatus: "Ethernet"
     property string wifiStatus: "Off"
     property string wifiIcon: "󰤮"
     property string wifiSsid: ""
     property bool isWifiOn: Networking.wifiEnabled
-    property bool showEthernet: ethStatus === "Connected" || (isDesktop && !isWifiOn)
+    readonly property bool showEthernet: ethDevice !== null
     property real targetX: 0
     property bool showLayout: moduleActive && (!barWindow || (barWindow.isStartupReady && barWindow.isDataReady))
     property alias wifiPill: wifiPill
@@ -37,25 +36,9 @@ Rectangle {
         updateNetworkData();
     }
 
-    onModuleActiveChanged: {
-        if (!moduleActive) {
-            chassisDetector.running = false;
-        } else {
-            chassisDetector.running = true;
-            findDevices();
-            updateNetworkData();
-        }
-    }
-
-    Process {
-        id: chassisDetector
-        running: wifiWidgetRoot.moduleActive
-        command: ["bash", "-c", "if ls /sys/class/power_supply/BAT* 1> /dev/null 2>&1; then echo 'laptop'; else echo 'desktop'; fi"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                isDesktop = (this.text.trim() === "desktop");
-            }
-        }
+    onModuleActiveChanged: if (moduleActive) {
+        findDevices();
+        updateNetworkData();
     }
 
     function isEthDevice(dev) {
@@ -264,20 +247,43 @@ Rectangle {
     Row {
         id: sysLayout
         anchors.centerIn: parent
+        spacing: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 4 : 5) : (wifiWidgetRoot.isCompact ? 4 : 5)
         property int pillHeight: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 28 : 30) : (wifiWidgetRoot.isCompact ? 28 : 30)
+
+        ClickButton {
+            id: ethernetPill
+            visible: wifiWidgetRoot.showEthernet
+            height: sysLayout.pillHeight
+            maxWidth: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 126 : 136) : (wifiWidgetRoot.isCompact ? 126 : 136)
+            cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
+            horizontalPadding: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 9 : 10) : (wifiWidgetRoot.isCompact ? 9 : 10)
+            buttonIcon: "󰈀"
+            iconFontSize: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 14 : 15) : (wifiWidgetRoot.isCompact ? 14 : 15)
+            iconOffsetY: -0.5
+            buttonText: wifiWidgetRoot.ethStatus
+            textFontSize: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 11 : 12) : (wifiWidgetRoot.isCompact ? 11 : 12)
+            accentColor: wifiWidgetRoot.ethStatus === "Connected"
+                ? (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.green, 1.08) : ThemeBackend.green)
+                : (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0)
+            textColor: wifiWidgetRoot.ethStatus === "Connected" ? ThemeBackend.base : ThemeBackend.text
+            width: visible ? implicitWidth : 0
+            opacity: visible ? 1 : 0
+            onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle network"])
+        }
 
         ClickButton {
             id: wifiPill
             property bool initAnimTrigger: wifiWidgetRoot.showLayout
-            property bool isActive: showEthernet ? (ethStatus === "Connected") : isWifiOn
+            property bool isActive: isWifiOn
 
             height: sysLayout.pillHeight
             maxWidth: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 156 : 160) : (wifiWidgetRoot.isCompact ? 156 : 160)
             cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
             horizontalPadding: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 10 : 12) : (wifiWidgetRoot.isCompact ? 10 : 12)
-            buttonIcon: showEthernet ? "󰈀" : wifiIcon
+            buttonIcon: wifiIcon
             iconFontSize: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 14 : 15) : (wifiWidgetRoot.isCompact ? 14 : 15)
-            buttonText: showEthernet ? ethStatus : ((isWifiOn ? (wifiSsid !== "" ? wifiSsid : "On") : "Off"))
+            iconOffsetY: -0.5
+            buttonText: isWifiOn ? (wifiSsid !== "" ? wifiSsid : "On") : "Off"
             textFontSize: barWindow ? barWindow.s(wifiWidgetRoot.isCompact ? 11 : 12) : (wifiWidgetRoot.isCompact ? 11 : 12)
             accentColor: isActive ? (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.blue, 1.08) : ThemeBackend.blue) : (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0)
             textColor: isActive ? ThemeBackend.base : (wifiWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.text, 1.05) : ThemeBackend.text)

@@ -45,6 +45,7 @@ Item {
     property string currentDownloadName: ""
 
     property bool isApplying: false
+    property string lastWallpaperTransition: ""
     property bool isMonitorSelectorOpen: false
     property bool allowAddAnimation: false
 
@@ -418,9 +419,14 @@ Item {
         window.targetWallName = safeFileName;
         let realFileName = window.getOriginalFileName(safeFileName);
 
-        let themeConfig = Config.getSetting("theme", {});
-        let transitionConfig = themeConfig && themeConfig.wallpaperTransition ? themeConfig.wallpaperTransition : {};
-        const randomTransition = isVideo ? "fade" : (transitionConfig.mode === "fade" ? "fade" : "expressive");
+        let themeCfg = Config.getSetting("theme", {});
+        let transitionCfg = themeCfg && themeCfg.wallpaperTransition ? themeCfg.wallpaperTransition : {};
+        let transitionMode = transitionCfg.mode !== undefined ? String(transitionCfg.mode) : "expressive";
+        const transitionTypes = transitionMode === "fade" ? ["fade"] : ["expressive"];
+        let candidates = transitionTypes.filter(function(t) { return t !== window.lastWallpaperTransition; });
+        if (candidates.length === 0) candidates = transitionTypes;
+        const randomTransition = candidates[Math.floor(Math.random() * candidates.length)];
+        window.lastWallpaperTransition = randomTransition;
 
         if (window.currentFilter === "History") {
             window.reorderHistory();

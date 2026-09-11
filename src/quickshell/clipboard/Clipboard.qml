@@ -13,7 +13,6 @@ import "../reusables"
 
 PanelWindow {
     id: clipboardWindow
-    Component.onCompleted: PopupController.clipboardWindow = clipboardWindow
 
     screen: ClipboardController.screen
 
@@ -840,7 +839,7 @@ PanelWindow {
             id: bgCard
             anchors.fill: parent
             radius: clipboardWindow.cornerRadius
-            color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.base, 0.22) : Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
+            color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             border.width: 0
             border.color: "transparent"
             clip: true
@@ -848,7 +847,6 @@ PanelWindow {
             AmbientBackdrop {
                 anchors.fill: parent
                 z: 0
-                cornerRadius: parent.radius
                 accentColor: ThemeBackend.sapphire
                 secondaryColor: ThemeBackend.mauve
                 tertiaryColor: ThemeBackend.blue

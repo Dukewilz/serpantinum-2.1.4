@@ -18,8 +18,6 @@ SliderProgress 1.0 SliderProgress.qml
 Draggable 1.0 Draggable.qml
 Switch 1.0 Switch.qml
 ImageBox 1.0 ImageBox.qml
+AmbientBackdrop 1.0 AmbientBackdrop.qml
 TimeSelector 1.0 TimeSelector.qml
 Dropdown 1.0 Dropdown.qml
-
-AmbientBackdrop 1.0 AmbientBackdrop.qml
-BackdropClip 1.0 BackdropClip.qml

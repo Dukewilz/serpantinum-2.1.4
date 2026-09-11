@@ -197,7 +197,7 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     if (Caching.serpantinumDir) {
-                        PopupController.handleCommand("toggle", "music", "");
+                        Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle music"]);
                     }
                 }
             }

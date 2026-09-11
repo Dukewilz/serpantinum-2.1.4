@@ -67,7 +67,10 @@ PanelWindow {
         target: "main"
 
         function forceReload(): void {
-            Quickshell.reload(true);
+            // Super+R arrives here through scripts/reload.sh.  Let Config
+            // finish its debounced/atomic write first so a reload can never
+            // discard the last slider or toggle update.
+            Config.requestReload();
         }
 
         function clearNotifications(): void {
@@ -295,7 +298,9 @@ PanelWindow {
 
     property var widgetCache: ({})
     property var componentCache: ({})
-    property var _allWidgetNames: ["battery", "network", "volume", "guide", "calendar", "wallpaper", "music", "movies", "notifications", "system"]
+    // Preload only real Registry entries.  The most frequently opened panels
+    // are warmed first, after startup has settled.
+    property var _allWidgetNames: ["guide", "calendar", "network", "volume", "system", "music", "notifications", "wallpaper"]
     property int _preloadIndex: 0
 
     function widgetNameForItem(item) {
@@ -322,7 +327,10 @@ PanelWindow {
             return null;
         }
 
-        let item = comp.createObject(preloaderContainer);
+        // Setting visible=false as an initial property matters: Component
+        // completion otherwise sees visible=true even though the preloader's
+        // parent is hidden, starting CAVA, polling and infinite animations.
+        let item = comp.createObject(preloaderContainer, { "visible": false });
         if (item) widgetCache[name] = item;
         return item;
     }
@@ -334,12 +342,19 @@ PanelWindow {
     }
 
     Component.onCompleted: {
-        preloadStaggerTimer.start();
+        preloadStartDelay.start();
+    }
+
+    Timer {
+        id: preloadStartDelay
+        interval: 900
+        repeat: false
+        onTriggered: preloadStaggerTimer.start()
     }
 
     Timer {
         id: preloadStaggerTimer
-        interval: 150
+        interval: 260
         repeat: true
         onTriggered: {
             if (masterWindow._preloadIndex >= masterWindow._allWidgetNames.length) {
@@ -390,63 +405,22 @@ PanelWindow {
         id: osdPopups
     }
 
-    Process {
-        id: settingsReader
-        command: ["bash", "-c", `cat "${Config.settingsJsonPath}" 2>/devnull || echo '{}'`]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    if (this.text && this.text.trim().length > 0 && this.text.trim() !== "{}") {
-                        let parsed = JSON.parse(this.text);
-                        let sName = masterWindow.screen ? masterWindow.screen.name : "";
-                        let sVal = undefined;
-
-                        if (sName !== "" && parsed.display && parsed.display.monitors && parsed.display.monitors[sName] && parsed.display.monitors[sName].scale !== undefined) {
-                            sVal = parsed.display.monitors[sName].scale;
-                        } else if (parsed.general && parsed.general.uiScale !== undefined) {
-                            sVal = parsed.general.uiScale;
-                        } else if (parsed.uiScale !== undefined) {
-                            sVal = parsed.uiScale;
-                        }
-
-                        if (sVal !== undefined && masterWindow.globalUiScale !== sVal) {
-                            masterWindow.globalUiScale = sVal;
-                        }
-
-                        if (parsed.bar) {
-                            masterWindow.rawBarSettings = parsed.bar;
-                            if (parsed.bar.position !== undefined) masterWindow.barPosition = parsed.bar.position;
-                            if (parsed.bar.autohide !== undefined) masterWindow.barAutohide = Boolean(parsed.bar.autohide);
-                        }
-                    }
-                } catch (e) {
-                }
-            }
-        }
-    }
-
-    Process {
-        id: settingsWatcher
-        command: ["bash", "-c", `while [ ! -f "${Config.settingsJsonPath}" ]; do sleep 1; done; inotifywait -qq -e modify,close_write "${Config.settingsJsonPath}"`]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                settingsReader.running = false;
-                settingsReader.running = true;
-                settingsWatcher.running = false;
-                settingsWatcher.running = true;
-            }
-        }
-    }
-
     Connections {
         target: (typeof Config !== "undefined") ? Config : null
         function onSettingsLoaded() {
-            let b = (Config.rawSettings && Config.rawSettings.bar) ? Config.rawSettings.bar : {};
-            masterWindow.rawBarSettings = b;
-            masterWindow.barPosition = (b && b.position !== undefined) ? b.position : "top";
-            masterWindow.barAutohide = (b && b.autohide !== undefined) ? Boolean(b.autohide) : false;
+            let parsed = Config.rawSettings || {};
+            let sName = masterWindow.screen ? masterWindow.screen.name : "";
+            let sVal = undefined;
+            if (sName !== "" && parsed.display && parsed.display.monitors && parsed.display.monitors[sName] && parsed.display.monitors[sName].scale !== undefined) {
+                sVal = parsed.display.monitors[sName].scale;
+            } else if (parsed.general && parsed.general.uiScale !== undefined) {
+                sVal = parsed.general.uiScale;
+            } else if (parsed.uiScale !== undefined) {
+                sVal = parsed.uiScale;
+            }
+            if (sVal !== undefined && masterWindow.globalUiScale !== sVal) {
+                masterWindow.globalUiScale = sVal;
+            }
         }
     }
 
@@ -620,6 +594,10 @@ PanelWindow {
 
         if (newWidget === "hidden") {
             if (currentActive !== "hidden") {
+                // StackView keeps the current item attached when the master
+                // window closes.  Explicitly hide it so its visible-guarded
+                // timers, pollers, CAVA and animations really stop.
+                if (widgetStack.currentItem) widgetStack.currentItem.visible = false;
                 masterWindow.currentActive = "hidden";
                 masterWindow.morphDuration = masterWindow.exitDuration;
                 masterWindow.disableMorph = true;
@@ -702,6 +680,9 @@ PanelWindow {
         if (widgetStack.currentItem !== cachedItem) {
             widgetStack.replace(cachedItem, {}, StackView.Immediate);
         }
+        // Also handles reopening the same cached item after it was explicitly
+        // suspended by the hidden branch above.
+        cachedItem.visible = true;
 
         masterWindow.isVisible = true;
 

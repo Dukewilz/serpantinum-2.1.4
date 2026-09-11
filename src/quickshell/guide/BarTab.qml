@@ -34,12 +34,25 @@ Item {
         "position": "top",
         "width": 100,
         "opacity": 100,
+        "contentOpacity": 100,
+        "blur": 0,
         "style": "modular",
         "distinctPills": false,
         "time": {"format": "HH:mm:ss"},
         "autohide": false,
         "autohideTimeout": 1000,
         "workspaceCount": 8,
+        "cava": {"bars": 10, "barWidth": 3, "spacing": 3},
+        "innerPill": {
+            "enabled": true,
+            "style": "adaptive",
+            "elevationPercent": 8,
+            "borderPercent": 10,
+            "verticalPadding": 5,
+            "minimumHeight": 46,
+            "outerRadius": 16,
+            "innerRadius": 10
+        },
         "groupColors": {},
         "modules": {
             "left": ["left", "workspaces", "media"],
@@ -52,6 +65,8 @@ Item {
     property string barPosition: barSettings.position !== undefined ? barSettings.position : "top"
     property real currentBarWidth: barSettings.width !== undefined ? barSettings.width : 100
     property real currentBarOpacity: barSettings.opacity !== undefined ? barSettings.opacity : 100
+    property real currentContentOpacity: barSettings.contentOpacity !== undefined ? barSettings.contentOpacity : 100
+    property real currentBarBlur: barSettings.blur !== undefined ? barSettings.blur : 0
     property string barStyle: {
         let s = barSettings.style;
         if (typeof s === "string") return s;
@@ -66,6 +81,80 @@ Item {
     property bool autohide: barSettings.autohide !== undefined ? barSettings.autohide : false
     property int autohideTimeout: barSettings.autohideTimeout !== undefined ? barSettings.autohideTimeout : 1000
     property int workspaceCount: barSettings.workspaceCount !== undefined ? barSettings.workspaceCount : 8
+    property int cavaBars: barSettings.cava && barSettings.cava.bars !== undefined ? barSettings.cava.bars : 10
+    property int cavaBarWidth: barSettings.cava && barSettings.cava.barWidth !== undefined ? barSettings.cava.barWidth : 3
+    property int cavaSpacing: barSettings.cava && barSettings.cava.spacing !== undefined ? barSettings.cava.spacing : 3
+    property bool innerPillEnabled: !barSettings.innerPill || barSettings.innerPill.enabled !== false
+    property string innerPillStyle: barSettings.innerPill && barSettings.innerPill.style !== undefined ? barSettings.innerPill.style : "adaptive"
+    property int innerPillElevation: barSettings.innerPill && barSettings.innerPill.elevationPercent !== undefined ? barSettings.innerPill.elevationPercent : 8
+    property int innerPillBorder: barSettings.innerPill && barSettings.innerPill.borderPercent !== undefined ? barSettings.innerPill.borderPercent : 10
+    property int innerPillPadding: barSettings.innerPill && barSettings.innerPill.verticalPadding !== undefined ? barSettings.innerPill.verticalPadding : 5
+    property int innerPillHeight: barSettings.innerPill && barSettings.innerPill.minimumHeight !== undefined ? barSettings.innerPill.minimumHeight : 46
+    property int innerPillOuterRadius: barSettings.innerPill && barSettings.innerPill.outerRadius !== undefined ? barSettings.innerPill.outerRadius : 16
+    property int innerPillRadius: barSettings.innerPill && barSettings.innerPill.innerRadius !== undefined ? barSettings.innerPill.innerRadius : 10
+    function cloneSettings(value, fallback) {
+        let source = value !== undefined && value !== null ? value : fallback;
+        try { return JSON.parse(JSON.stringify(source)); }
+        catch (e) { return JSON.parse(JSON.stringify(fallback)); }
+    }
+
+    component LeftNumberSetting: Rectangle {
+        id: settingRoot
+        required property string title
+        property string hint: ""
+        required property real currentValue
+        required property real minimumValue
+        required property real maximumValue
+        property real valueStep: 1
+        property int valueDecimals: 0
+        signal valueCommitted(real value)
+
+        Layout.fillWidth: true
+        implicitHeight: settingColumn.implicitHeight + rootObj.s(16)
+        radius: rootObj.s(12)
+        color: Qt.alpha(ThemeBackend.surface0, 0.52)
+        border.width: 1
+        border.color: Qt.alpha(ThemeBackend.surface2, 0.32)
+
+        ColumnLayout {
+            id: settingColumn
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: rootObj.s(12)
+            anchors.rightMargin: rootObj.s(12)
+            spacing: rootObj.s(7)
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: rootObj.s(1)
+                Text { text: settingRoot.title; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(12); color: ThemeBackend.text }
+                Text { visible: settingRoot.hint !== ""; text: settingRoot.hint; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10); color: ThemeBackend.subtext0 }
+            }
+
+            NumberSelector {
+                Layout.alignment: Qt.AlignLeft
+                implicitWidth: rootObj.s(154)
+                implicitHeight: rootObj.s(32)
+                from: settingRoot.minimumValue
+                to: settingRoot.maximumValue
+                stepSize: settingRoot.valueStep
+                decimals: settingRoot.valueDecimals
+                value: settingRoot.currentValue
+                baseColor: ThemeBackend.mantle
+                accentColor: ThemeBackend.mauve
+                buttonColor: ThemeBackend.surface1
+                buttonTextColor: ThemeBackend.text
+                textColor: ThemeBackend.text
+                subTextColor: ThemeBackend.subtext0
+                borderColor: Qt.alpha(ThemeBackend.surface2, 0.55)
+                cornerRadius: ThemeBackend.borderRadius
+                fontFamily: ThemeBackend.fontFamily
+                fontPixelSize: rootObj.s(11)
+                onTriggered: settingRoot.valueCommitted(value)
+            }
+        }
+    }
 
     ListModel { id: leftModel }
     ListModel { id: centerModel }
@@ -407,6 +496,7 @@ Item {
     }
 
     function saveModuleModels() {
+        if (!Config.dataReady) return;
         let l = buildModelArray(leftModel);
         let c = buildModelArray(centerModel);
         let r = buildModelArray(rightModel);
@@ -420,6 +510,7 @@ Item {
     }
 
     function resetBarSettings() {
+        if (!Config.dataReady) return;
         clearPendingGroup();
         let current = Config.getSetting("bar", barTabRoot.defaultBarSettings);
         current.modules = JSON.parse(JSON.stringify(barTabRoot.defaultBarSettings.modules));
@@ -711,6 +802,8 @@ Item {
         barTabRoot.barPosition = ts.position !== undefined ? ts.position : "top";
         barTabRoot.currentBarWidth = ts.width !== undefined ? ts.width : 100;
         barTabRoot.currentBarOpacity = ts.opacity !== undefined ? ts.opacity : 100;
+        barTabRoot.currentContentOpacity = ts.contentOpacity !== undefined ? ts.contentOpacity : 100;
+        barTabRoot.currentBarBlur = ts.blur !== undefined ? ts.blur : 0;
         if (typeof ts.style === "string") {
             barTabRoot.barStyle = ts.style;
         } else if (ts.style && typeof ts.style === "object") {
@@ -725,10 +818,24 @@ Item {
         barTabRoot.autohide = ts.autohide !== undefined ? ts.autohide : false;
         barTabRoot.autohideTimeout = ts.autohideTimeout !== undefined ? ts.autohideTimeout : 1000;
         barTabRoot.workspaceCount = ts.workspaceCount !== undefined ? ts.workspaceCount : 8;
+        let cava = ts.cava || barTabRoot.defaultBarSettings.cava;
+        barTabRoot.cavaBars = cava.bars !== undefined ? cava.bars : 10;
+        barTabRoot.cavaBarWidth = cava.barWidth !== undefined ? cava.barWidth : 3;
+        barTabRoot.cavaSpacing = cava.spacing !== undefined ? cava.spacing : 3;
+        let pill = ts.innerPill || barTabRoot.defaultBarSettings.innerPill;
+        barTabRoot.innerPillEnabled = pill.enabled !== false;
+        barTabRoot.innerPillStyle = pill.style !== undefined ? pill.style : "adaptive";
+        barTabRoot.innerPillElevation = pill.elevationPercent !== undefined ? pill.elevationPercent : 8;
+        barTabRoot.innerPillBorder = pill.borderPercent !== undefined ? pill.borderPercent : 10;
+        barTabRoot.innerPillPadding = pill.verticalPadding !== undefined ? pill.verticalPadding : 5;
+        barTabRoot.innerPillHeight = pill.minimumHeight !== undefined ? pill.minimumHeight : 46;
+        barTabRoot.innerPillOuterRadius = pill.outerRadius !== undefined ? pill.outerRadius : 16;
+        barTabRoot.innerPillRadius = pill.innerRadius !== undefined ? pill.innerRadius : 10;
         if (ts.groupColors) {
             barTabRoot.assignedGroupColors = ts.groupColors;
         }
         barTabRoot.barSettings = ts;
+
     }
 
     Component.onCompleted: {
@@ -752,10 +859,16 @@ Item {
     }
 
     function updateBarSettings() {
-        let current = Config.getSetting("bar", barTabRoot.defaultBarSettings);
+        // Never persist UI defaults during the short Config bootstrap window.
+        // Otherwise moving an opacity/blur control can replace a user's saved
+        // modules/theme-adjacent state with the v24 defaults.
+        if (!Config.dataReady) return;
+        let current = barTabRoot.cloneSettings(Config.getSetting("bar", null), barTabRoot.defaultBarSettings);
         current.position = barTabRoot.barPosition;
         current.width = barTabRoot.currentBarWidth;
         current.opacity = barTabRoot.currentBarOpacity;
+        current.contentOpacity = barTabRoot.currentContentOpacity;
+        current.blur = barTabRoot.currentBarBlur;
         current.style = barTabRoot.barStyle;
         current.distinctPills = barTabRoot.distinctPills;
         if (!current.time) current.time = {};
@@ -763,7 +876,22 @@ Item {
         current.autohide = barTabRoot.autohide;
         current.autohideTimeout = barTabRoot.autohideTimeout;
         current.workspaceCount = barTabRoot.workspaceCount;
-        if (!current.modules) current.modules = barTabRoot.defaultBarSettings.modules;
+        current.cava = {
+            bars: Math.max(4, Math.min(24, Math.round(barTabRoot.cavaBars))),
+            barWidth: Math.max(2, Math.min(6, Math.round(barTabRoot.cavaBarWidth))),
+            spacing: Math.max(1, Math.min(6, Math.round(barTabRoot.cavaSpacing)))
+        };
+        current.innerPill = {
+            enabled: barTabRoot.innerPillEnabled,
+            style: barTabRoot.innerPillStyle,
+            elevationPercent: Math.max(0, Math.min(12, Math.round(barTabRoot.innerPillElevation))),
+            borderPercent: Math.max(0, Math.min(20, Math.round(barTabRoot.innerPillBorder))),
+            verticalPadding: Math.max(3, Math.min(9, Math.round(barTabRoot.innerPillPadding))),
+            minimumHeight: Math.max(42, Math.min(58, Math.round(barTabRoot.innerPillHeight))),
+            outerRadius: Math.max(8, Math.min(24, Math.round(barTabRoot.innerPillOuterRadius))),
+            innerRadius: Math.max(4, Math.min(20, Math.round(barTabRoot.innerPillRadius)))
+        };
+        if (!current.modules) current.modules = barTabRoot.cloneSettings(barTabRoot.defaultBarSettings.modules, {});
         current.groupColors = barTabRoot.assignedGroupColors;
 
         barTabRoot.lastSavedModulesString = barTabRoot.getModulesString(current.modules);
@@ -1283,6 +1411,111 @@ Item {
                 }
             }
 
+            // ── Inner pill surface section ──────────────────────────────
+            Item {
+                id: innerPillSectionWrapper
+                Layout.fillWidth: true
+                property bool isOpen: barTabRoot.barStyle === "solid" || barTabRoot.barStyle === "fill"
+                clip: true
+                visible: implicitHeight > 0
+                opacity: isOpen ? 1.0 : 0.0
+                implicitHeight: isOpen ? innerPillOuterBox.implicitHeight + rootObj.s(8) : 0
+
+                Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                Behavior on implicitHeight { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+                Rectangle {
+                    id: innerPillOuterBox
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    implicitHeight: innerPillSettingsCol.implicitHeight + rootObj.s(28)
+                    radius: ThemeBackend.borderRadius
+                    color: Qt.alpha(ThemeBackend.surface0, 0.4)
+                    border.width: 1
+                    border.color: Qt.alpha(ThemeBackend.surface2, 0.34)
+
+                    ColumnLayout {
+                        id: innerPillSettingsCol
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: rootObj.s(14)
+                        spacing: rootObj.s(10)
+
+                        // Header: title + desc + toggle
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: rootObj.s(7)
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: rootObj.s(2)
+                                Text {
+                                    text: "Inner pill surface"
+                                    font.family: ThemeBackend.fontFamily
+                                    font.weight: Font.DemiBold
+                                    font.pixelSize: rootObj.s(14)
+                                    color: ThemeBackend.text
+                                }
+                                Text {
+                                    text: "Floating capsules inside Solid and Fill surfaces, restored from v24."
+                                    font.family: ThemeBackend.fontFamily
+                                    font.pixelSize: rootObj.s(10.5)
+                                    color: ThemeBackend.subtext0
+                                    wrapMode: Text.WordWrap
+                                    Layout.fillWidth: true
+                                }
+                            }
+
+                            Toggle {
+                                Layout.alignment: Qt.AlignLeft
+                                checked: barTabRoot.innerPillEnabled
+                                accentColor: ThemeBackend.mauve
+                                baseColor: ThemeBackend.surface1
+                                handleColor: ThemeBackend.crust
+                                handleOffColor: ThemeBackend.text
+                                onToggled: function(c) { barTabRoot.innerPillEnabled = c; barTabRoot.updateBarSettings(); }
+                            }
+                        }
+
+                        // Style switch
+                        Switch {
+                            Layout.alignment: Qt.AlignLeft
+                            implicitWidth: rootObj.s(420)
+                            implicitHeight: rootObj.s(34)
+                            options: ["Adaptive", "end-4", "Caelestia", "Ilyamiro"]
+                            currentIndex: Math.max(0, ["adaptive", "end4", "caelestia", "ilyamiro"].indexOf(barTabRoot.innerPillStyle))
+                            accentColor: ThemeBackend.mauve
+                            baseColor: ThemeBackend.mantle
+                            textColor: ThemeBackend.subtext0
+                            activeTextColor: ThemeBackend.crust
+                            cornerRadius: ThemeBackend.borderRadius
+                            fontPixelSize: rootObj.s(10.5)
+                            onValueChanged: function(index, value) {
+                                barTabRoot.innerPillStyle = ["adaptive", "end4", "caelestia", "ilyamiro"][Math.max(0, index)];
+                                barTabRoot.updateBarSettings();
+                            }
+                        }
+
+                        // Settings grid
+                        GridLayout {
+                            Layout.fillWidth: true
+                            columns: 3
+                            columnSpacing: rootObj.s(8)
+                            rowSpacing: rootObj.s(8)
+
+                            LeftNumberSetting { title: "Outer height"; hint: "42–58 px"; currentValue: barTabRoot.innerPillHeight; minimumValue: 42; maximumValue: 58; onValueCommitted: function(v) { barTabRoot.innerPillHeight = Math.round(v); barTabRoot.updateBarSettings(); } }
+                            LeftNumberSetting { title: "Vertical padding"; hint: "3–9 px"; currentValue: barTabRoot.innerPillPadding; minimumValue: 3; maximumValue: 9; onValueCommitted: function(v) { barTabRoot.innerPillPadding = Math.round(v); barTabRoot.updateBarSettings(); } }
+                            LeftNumberSetting { title: "Surface elevation"; hint: "0–12%"; currentValue: barTabRoot.innerPillElevation; minimumValue: 0; maximumValue: 12; onValueCommitted: function(v) { barTabRoot.innerPillElevation = Math.round(v); barTabRoot.updateBarSettings(); } }
+                            LeftNumberSetting { title: "Border visibility"; hint: "0–20%"; currentValue: barTabRoot.innerPillBorder; minimumValue: 0; maximumValue: 20; onValueCommitted: function(v) { barTabRoot.innerPillBorder = Math.round(v); barTabRoot.updateBarSettings(); } }
+                            LeftNumberSetting { title: "Outer radius"; hint: "8–24 px"; currentValue: barTabRoot.innerPillOuterRadius; minimumValue: 8; maximumValue: 24; onValueCommitted: function(v) { barTabRoot.innerPillOuterRadius = Math.round(v); barTabRoot.updateBarSettings(); } }
+                            LeftNumberSetting { title: "Inner radius"; hint: "4–20 px"; currentValue: barTabRoot.innerPillRadius; minimumValue: 4; maximumValue: 20; onValueCommitted: function(v) { barTabRoot.innerPillRadius = Math.round(v); barTabRoot.updateBarSettings(); } }
+                        }
+                    }
+                }
+            }
+
             Item {
                 id: widthSectionWrapper
                 Layout.fillWidth: true
@@ -1481,6 +1714,48 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
+                implicitHeight: v24BarControls.implicitHeight + rootObj.s(24)
+                radius: ThemeBackend.borderRadius
+                color: Qt.alpha(ThemeBackend.surface0, 0.4)
+                border.width: 0
+
+                ColumnLayout {
+                    id: v24BarControls
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: rootObj.s(14)
+                    anchors.rightMargin: rootObj.s(14)
+                    spacing: rootObj.s(10)
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        IconButton { enabled: false; size: rootObj.s(32); buttonIcon: "󰝚"; iconFontSize: rootObj.s(16); cornerRadius: ThemeBackend.borderRadius; accentColor: ThemeBackend.surface0; textColor: ThemeBackend.text }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: rootObj.s(2)
+                            Text { text: "Cava bar"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(13); color: ThemeBackend.text }
+                            Text { text: "Visualizer bar density, width and gap controls for the CAVA spectrum bar"; font.family: ThemeBackend.fontFamily; font.pixelSize: rootObj.s(10); color: ThemeBackend.subtext0; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                        }
+                    }
+
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columns: 3
+                        columnSpacing: rootObj.s(8)
+                        rowSpacing: rootObj.s(8)
+
+                        LeftNumberSetting { title: "Content opacity"; hint: "Icons and text"; currentValue: barTabRoot.currentContentOpacity; minimumValue: 20; maximumValue: 100; onValueCommitted: function(v) { barTabRoot.currentContentOpacity = Math.round(v); barTabRoot.updateBarSettings(); } }
+                        LeftNumberSetting { title: "Surface blur"; hint: "Bar acrylic blur"; currentValue: barTabRoot.currentBarBlur; minimumValue: 0; maximumValue: 100; onValueCommitted: function(v) { barTabRoot.currentBarBlur = Math.round(v); barTabRoot.updateBarSettings(); } }
+                        LeftNumberSetting { title: "CAVA bars"; hint: "Visualizer density"; currentValue: barTabRoot.cavaBars; minimumValue: 4; maximumValue: 24; onValueCommitted: function(v) { barTabRoot.cavaBars = Math.round(v); barTabRoot.updateBarSettings(); } }
+                        LeftNumberSetting { title: "CAVA width"; hint: "Visualizer bar width"; currentValue: barTabRoot.cavaBarWidth; minimumValue: 2; maximumValue: 6; onValueCommitted: function(v) { barTabRoot.cavaBarWidth = Math.round(v); barTabRoot.updateBarSettings(); } }
+                        LeftNumberSetting { title: "CAVA spacing"; hint: "Gap between bars"; currentValue: barTabRoot.cavaSpacing; minimumValue: 1; maximumValue: 6; onValueCommitted: function(v) { barTabRoot.cavaSpacing = Math.round(v); barTabRoot.updateBarSettings(); } }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
                 implicitHeight: rowTimeLayout.implicitHeight + rootObj.s(24)
                 radius: ThemeBackend.borderRadius
                 color: Qt.alpha(ThemeBackend.surface0, 0.4)
@@ -1646,7 +1921,7 @@ Item {
                         }
 
                         RowLayout {
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            Layout.alignment: Qt.AlignLeft
                             spacing: rootObj.s(12)
                             Layout.rightMargin: rootObj.s(8)
 

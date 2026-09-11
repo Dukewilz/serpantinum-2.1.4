@@ -14,7 +14,7 @@ Variants {
     delegate: Component {
         PanelWindow {
             id: barWindow
-            visible: (barConfigReady || Config.loadFailed) && !shouldHideForRedact
+            visible: barConfigReady && !shouldHideForRedact
 
             property bool pendingReload: false
             property bool startupFilesReady: false
@@ -75,16 +75,29 @@ Variants {
                 }
             }
 
+            function normalizeBarStyle(value) {
+                if (typeof value === "string") {
+                    let mode = value.trim().toLowerCase();
+                    return (mode === "fill" || mode === "solid") ? mode : "modular";
+                }
+                if (value && typeof value === "object") {
+                    let namedMode = value.mode !== undefined ? value.mode
+                                  : (value.value !== undefined ? value.value
+                                  : (value.name !== undefined ? value.name : value.current));
+                    if (typeof namedMode === "string") {
+                        let mode = namedMode.trim().toLowerCase();
+                        if (mode === "fill" || mode === "solid" || mode === "modular") return mode;
+                    }
+                    if (value.fill === true) return "fill";
+                    if (value.solid === true) return "solid";
+                }
+                return "modular";
+            }
+
             property string barStyle: {
                 let dummy = configRevision;
                 if (typeof Config === "undefined" || !Config.rawSettings || !Config.rawSettings.bar) return "modular";
-                let s = Config.rawSettings.bar.style;
-                if (typeof s === "string") return s;
-                if (s && typeof s === "object") {
-                    if (s.fill || s.mode === "fill") return "fill";
-                    if (s.solid || s.mode === "solid") return "solid";
-                }
-                return "modular";
+                return normalizeBarStyle(Config.rawSettings.bar.style);
             }
             property bool isFill: barStyle === "fill"
             property bool isSolid: barStyle === "solid" || barStyle === "fill"
@@ -95,13 +108,15 @@ Variants {
 
             property bool barConfigReady: {
                 let dummy = configRevision;
-                return typeof Config !== "undefined" && Config.dataReady && Config.rawSettings;
+                if (typeof Config === "undefined" || !Config.dataReady || !Config.rawSettings) return false;
+                return true;
             }
 
             property bool autohide: {
                 let dummy = configRevision;
                 return (barConfigReady && Config.rawSettings.bar && Config.rawSettings.bar.autohide !== undefined)
-                    ? Boolean(Config.rawSettings.bar.autohide) : false;
+                    ? Boolean(Config.rawSettings.bar.autohide)
+                    : false;
             }
             property int autohideTimeout: {
                 let dummy = configRevision;
@@ -248,12 +263,17 @@ Variants {
                 return Math.round(Scaler.s(val));
             }
 
-            readonly property var innerPillSettings: (barConfigReady && Config.rawSettings.bar && Config.rawSettings.bar.innerPill)
-                ? Config.rawSettings.bar.innerPill : ({"enabled": true, "minimumHeight": 46, "outerRadius": 16})
-            property int barHeight: s((!isVertical && isSolid && innerPillSettings.enabled !== false)
-                ? Math.max(42, Math.min(58, innerPillSettings.minimumHeight || 46)) : 40)
-            property real cornerRadius: s((!isVertical && isSolid && innerPillSettings.enabled !== false)
-                ? Math.max(8, Math.min(24, innerPillSettings.outerRadius || 16)) : 12)
+            property int barHeight: s(40)
+            property var innerPillSettings: {
+                let dummy = configRevision;
+                if (barConfigReady && Config.rawSettings.bar && Config.rawSettings.bar.innerPill) {
+                    return Config.rawSettings.bar.innerPill;
+                }
+                return { "enabled": true, "minimumHeight": 46, "outerRadius": 16, "innerRadius": 10, "verticalPadding": 5 };
+            }
+            property real cornerRadius: s(distinctPills
+                ? Math.max(8, Math.min(24, innerPillSettings.outerRadius !== undefined ? innerPillSettings.outerRadius : 16))
+                : 12)
 
             property real baseOffsetY: {
                 if (barPosition === "bottom") {

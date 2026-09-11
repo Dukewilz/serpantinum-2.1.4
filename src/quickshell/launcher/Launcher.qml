@@ -94,7 +94,7 @@ PanelWindow {
         "width": 600,
         "itemCount": 6,
         "terminalCommand": "kitty -e",
-        "smartRanking": true
+        "smartRanking": false
     })
 
     property var rawLauncherSettings: {
@@ -112,7 +112,7 @@ PanelWindow {
     property real customWidth: (rawLauncherSettings && rawLauncherSettings.width !== undefined && !isNaN(rawLauncherSettings.width) && rawLauncherSettings.width > 0) ? rawLauncherSettings.width : 600
     property int customItemCount: (rawLauncherSettings && rawLauncherSettings.itemCount !== undefined && !isNaN(rawLauncherSettings.itemCount) && rawLauncherSettings.itemCount > 0) ? rawLauncherSettings.itemCount : 6
     property string terminalCommand: (rawLauncherSettings && rawLauncherSettings.terminalCommand !== undefined) ? rawLauncherSettings.terminalCommand : "kitty -e"
-    property bool smartRanking: (rawLauncherSettings && rawLauncherSettings.smartRanking !== undefined) ? rawLauncherSettings.smartRanking : true
+    property bool smartRanking: (rawLauncherSettings && rawLauncherSettings.smartRanking !== undefined) ? rawLauncherSettings.smartRanking : false
 
     onSmartRankingChanged: {
         if (launcherWindow.isVisible) {
@@ -189,7 +189,7 @@ PanelWindow {
     }
 
     property bool isBarSolid: (barStyle === "solid" || barStyle === "fill") && Math.round(barOpacity * 100) >= 100
-    property bool barMatchesLauncher: isBarSolid && (attachEdge === barPosition) && !isBarEffectivelyHidden
+    property bool barMatchesLauncher: (attachEdge === barPosition) && !isBarEffectivelyHidden
 
     property string attachEdge: launcherPosition
     property bool isSideAttached: attachEdge === "left" || attachEdge === "right"
@@ -706,10 +706,22 @@ PanelWindow {
         if (entry) {
             entry.execute();
         }
-        if (Caching.qsDir) {
+        if (launcherWindow.smartRanking && Caching.qsDir) {
             Quickshell.execDetached(["python3", Caching.qsDir + "/launcher/app_rank.py", "--log-launch", "--name", appName]);
         }
         closeLauncher();
+    }
+
+    function desktopIconFor(desktopId, fallbackIcon) {
+        if (typeof DesktopEntries !== "undefined" && desktopId) {
+            try {
+                let entry = DesktopEntries.byId(desktopId);
+                if (!entry && String(desktopId).endsWith(".desktop"))
+                    entry = DesktopEntries.byId(String(desktopId).slice(0, -8));
+                if (entry && entry.icon) return entry.icon;
+            } catch (e) {}
+        }
+        return fallbackIcon || "";
     }
 
     Item {
@@ -762,9 +774,8 @@ PanelWindow {
         property real animProgress: launcherWindow.isVisible ? 1.0 : 0.0
         Behavior on animProgress {
             NumberAnimation {
-                duration: launcherWindow.isVisible ? (launcherWindow.isCentered ? 320 : 220) : (launcherWindow.isCentered ? 200 : 150)
-                easing.type: launcherWindow.isVisible ? Easing.OutBack : Easing.InQuad
-                easing.overshoot: 1.15
+                duration: launcherWindow.isVisible ? (launcherWindow.isCentered ? 320 : 280) : (launcherWindow.isCentered ? 200 : 180)
+                easing.type: launcherWindow.isVisible ? Easing.OutCubic : Easing.InCubic
             }
         }
 
@@ -808,12 +819,11 @@ PanelWindow {
             return launcherWindow.animatedLauncherHeight;
         }
 
-        opacity: launcherWindow.isCentered
-                 ? Math.max(0.0, Math.min(1.0, animProgress * 1.5))
-                 : ((launcherWindow.isVisible || animProgress > 0.001) ? 1.0 : 0.0)
+        opacity: Math.max(0.0, Math.min(1.0, animProgress * 1.5))
 
         transformOrigin: Item.Center
 
+        // Corner hug top-left
         Shape {
             visible: launcherWindow.attachEdge === "top" && container.dynamicCornerRadius > 0.5
             x: -container.dynamicCornerRadius
@@ -838,6 +848,7 @@ PanelWindow {
             }
         }
 
+        // Corner hug top-right
         Shape {
             visible: launcherWindow.attachEdge === "top" && container.dynamicCornerRadius > 0.5
             x: parent.width
@@ -1010,18 +1021,30 @@ PanelWindow {
             id: bgCard
             anchors.fill: parent
             radius: container.dynamicCornerRadius
-            color: ThemeBackend.base
+            color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.base, 0.22) : Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             border.width: launcherWindow.isCentered ? 1 : 0
             border.color: launcherWindow.isCentered ? Qt.alpha(ThemeBackend.surface2, 0.6) : "transparent"
             clip: true
 
+            AmbientBackdrop {
+                anchors.fill: parent
+                z: 0
+                accentColor: ThemeBackend.mauve
+                secondaryColor: ThemeBackend.sapphire
+                tertiaryColor: ThemeBackend.teal
+                glyph: "󰍉"
+                strength: 0.82
+                active: launcherWindow.isVisible
+                animate: launcherWindow.visible
+            }
+
             Rectangle {
                 visible: launcherWindow.attachEdge === "top" && container.dynamicCornerRadius > 0.5
                 x: 0
                 y: 0
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -1030,7 +1053,7 @@ PanelWindow {
                 y: 0
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -1039,7 +1062,7 @@ PanelWindow {
                 y: parent.height - container.dynamicCornerRadius
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -1048,7 +1071,7 @@ PanelWindow {
                 y: parent.height - container.dynamicCornerRadius
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -1057,7 +1080,7 @@ PanelWindow {
                 y: 0
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -1066,7 +1089,7 @@ PanelWindow {
                 y: parent.height - container.dynamicCornerRadius
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -1075,7 +1098,7 @@ PanelWindow {
                 y: 0
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Rectangle {
@@ -1084,7 +1107,7 @@ PanelWindow {
                 y: parent.height - container.dynamicCornerRadius
                 width: container.dynamicCornerRadius
                 height: container.dynamicCornerRadius
-                color: ThemeBackend.base
+                color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             }
 
             Item {
@@ -1224,13 +1247,11 @@ PanelWindow {
 
                         highlightFollowsCurrentItem: false
 
-                        property bool transitionsEnabled: launcherWindow.isVisible && container.animProgress > 0.98
-
-                        add: transitionsEnabled ? listAddTrans : null
-                        remove: transitionsEnabled ? listRemoveTrans : null
-                        displaced: transitionsEnabled ? listDisplacedTrans : null
-                        move: transitionsEnabled ? listMoveTrans : null
-                        moveDisplaced: transitionsEnabled ? listDisplacedTrans : null
+                        add: listAddTrans
+                        remove: listRemoveTrans
+                        displaced: listDisplacedTrans
+                        move: listMoveTrans
+                        moveDisplaced: listDisplacedTrans
 
                         onCurrentIndexChanged: {
                             if (currentIndex >= 0) {
@@ -1260,10 +1281,9 @@ PanelWindow {
                             y: targetY
 
                             Behavior on y {
-                                enabled: appList.transitionsEnabled
                                 NumberAnimation {
-                                    duration: 260
-                                    easing.type: Easing.OutCubic
+                                    duration: 320
+                                    easing.type: Easing.OutQuint
                                 }
                             }
                         }
@@ -1282,7 +1302,7 @@ PanelWindow {
                                 anchors.fill: parent
 
                                 scale: ma.pressed ? 0.98 : 1.0
-                                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+                                Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
 
                                 Rectangle {
                                     anchors.fill: parent
@@ -1300,7 +1320,7 @@ PanelWindow {
                                     spacing: launcherWindow.s(10)
 
                                     Behavior on anchors.leftMargin {
-                                        NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 1.15 }
+                                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
                                     }
 
                                     Item {
@@ -1333,7 +1353,7 @@ PanelWindow {
                                             anchors.fill: parent
                                             anchors.margins: parent.boxPadding
                                             radius: Math.max(0, parent.boxRadius - parent.boxPadding)
-                                            color: "transparent"
+                                            color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
                                             clip: true
 
                                             Image {
@@ -1345,7 +1365,7 @@ PanelWindow {
 
                                                 source: {
                                                     if (model.fontIcon && model.fontIcon !== "") return "";
-                                                    let ic = model.icon || "";
+                                                    let ic = launcherWindow.desktopIconFor(model.desktop_id || "", model.icon || "");
                                                     if (!ic) return "";
                                                     if (ic.startsWith("file://") || ic.startsWith("image://") || ic.startsWith("http://") || ic.startsWith("https://")) return ic;
                                                     return ic.startsWith("/") ? "file://" + ic : "image://icon/" + ic;
@@ -1367,6 +1387,7 @@ PanelWindow {
                                             Text {
                                                 id: delegateFontIcon
                                                 anchors.centerIn: parent
+                                                anchors.verticalCenterOffset: -Math.round(launcherWindow.s(16) * 0.07)
                                                 visible: !delegateIcon.visible
                                                 text: {
                                                     if (model.fontIcon && model.fontIcon !== "") return model.fontIcon;
@@ -1374,8 +1395,9 @@ PanelWindow {
                                                     if (model.isCommand) return "󰆍";
                                                     return "󰵆";
                                                 }
-                                                font.family: ThemeBackend.fontFamily
+                                                font.family: "Iosevka Nerd Font"
                                                 font.pixelSize: launcherWindow.s(16)
+                                                renderType: Text.NativeRendering
                                                 color: delegateRoot.isSelected ? ThemeBackend.mauve : ThemeBackend.subtext0
                                                 verticalAlignment: Text.AlignVCenter
                                                 horizontalAlignment: Text.AlignHCenter

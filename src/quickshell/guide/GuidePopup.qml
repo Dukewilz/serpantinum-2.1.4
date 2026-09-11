@@ -346,8 +346,21 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: ThemeBackend.clampedBorderRadius
-            color: ThemeBackend.base
+            color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             border.color: ThemeBackend.surface0
+            clip: true
+
+            AmbientBackdrop {
+                anchors.fill: parent
+                z: 0
+                accentColor: root.ambientPurple
+                secondaryColor: root.ambientBlue
+                tertiaryColor: ThemeBackend.teal
+                glyph: "󰒓"
+                strength: 0.72
+                active: root.visible
+                animate: root.visible
+            }
 
             property real time: 0
             NumberAnimation on time {

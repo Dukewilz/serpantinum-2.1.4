@@ -99,11 +99,11 @@ Rectangle {
             property real waveCenterOffset: 0.375 * waveAmp * (Math.sin(batWidgetRoot.globalWavePhase) - Math.cos(batWidgetRoot.globalWavePhase))
 
             height: sysLayout.pillHeight
-            property real targetWidth: batWidgetRoot.isDesktop ? sysLayout.pillHeight : (baseContentRow.implicitWidth + (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 16 : 18) : (batWidgetRoot.isCompact ? 16 : 18)))
+            property real targetWidth: batWidgetRoot.isDesktop ? (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 32 : 36) : (batWidgetRoot.isCompact ? 32 : 36)) : (baseContentRow.implicitWidth + (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 16 : 18) : (batWidgetRoot.isCompact ? 16 : 18)))
             width: targetWidth
             Behavior on width { NumberAnimation { duration: 480; easing.type: Easing.OutQuint } }
 
-            radius: batWidgetRoot.isDesktop ? Math.round(sysLayout.pillHeight / 2) : Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
+            radius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
             color: batWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0
             border.color: batWidgetRoot.isCompact ? ThemeBackend.surface2 : ThemeBackend.surface1
             border.width: 1
@@ -204,7 +204,7 @@ Rectangle {
                 Text {
                     text: batWidgetRoot.batIcon
                     font.family: "Iosevka Nerd Font"
-                    font.pixelSize: batWidgetRoot.isDesktop ? (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 20 : 22) : (batWidgetRoot.isCompact ? 20 : 22)) : (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 12 : 13.5) : (batWidgetRoot.isCompact ? 12 : 13.5))
+                    font.pixelSize: batWidgetRoot.isDesktop ? (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 16 : 18) : (batWidgetRoot.isCompact ? 16 : 18)) : (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 12 : 13.5) : (batWidgetRoot.isCompact ? 12 : 13.5))
                     color: batWidgetRoot.isDesktop ? ThemeBackend.red : (batWidgetRoot.isCompact ? ThemeBackend.text : ThemeBackend.subtext0)
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -212,7 +212,7 @@ Rectangle {
                 Text {
                     visible: !batWidgetRoot.isDesktop
                     text: batWidgetRoot.batPercent
-                    font.family: "Iosevka Nerd Font"
+                    font.family: ThemeBackend.fontFamily
                     font.pixelSize: barWindow ? barWindow.s(batWidgetRoot.isCompact ? 11 : 12.6) : (batWidgetRoot.isCompact ? 11 : 12.6)
                     font.bold: true
                     color: ThemeBackend.text
@@ -242,7 +242,7 @@ Rectangle {
                         Text {
                             text: batWidgetRoot.batIcon
                             font.family: "Iosevka Nerd Font"
-                            font.pixelSize: batWidgetRoot.isDesktop ? (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 20 : 22) : (batWidgetRoot.isCompact ? 20 : 22)) : (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 12 : 13.5) : (batWidgetRoot.isCompact ? 12 : 13.5))
+                            font.pixelSize: batWidgetRoot.isDesktop ? (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 16 : 18) : (batWidgetRoot.isCompact ? 16 : 18)) : (barWindow ? barWindow.s(batWidgetRoot.isCompact ? 12 : 13.5) : (batWidgetRoot.isCompact ? 12 : 13.5))
                             color: Qt.rgba(ThemeBackend.crust.r, ThemeBackend.crust.g, ThemeBackend.crust.b, 0.75)
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -250,7 +250,7 @@ Rectangle {
                         Text {
                             visible: !batWidgetRoot.isDesktop
                             text: batWidgetRoot.batPercent
-                            font.family: "Iosevka Nerd Font"
+                            font.family: ThemeBackend.fontFamily
                             font.pixelSize: barWindow ? barWindow.s(batWidgetRoot.isCompact ? 11 : 12.6) : (batWidgetRoot.isCompact ? 11 : 12.6)
                             font.bold: true
                             color: ThemeBackend.crust
@@ -263,7 +263,7 @@ Rectangle {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: PopupController.handleCommand("toggle", "system", "")
+                onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle system"])
             }
         }
     }

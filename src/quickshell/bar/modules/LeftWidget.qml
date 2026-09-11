@@ -59,18 +59,18 @@ Rectangle {
         anchors.leftMargin: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 3 : 4) : (leftWidgetRoot.isCompact ? 3 : 4)
         spacing: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 5 : 6) : (leftWidgetRoot.isCompact ? 5 : 6)
 
-        property int pillHeight: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 28 : 30) : (leftWidgetRoot.isCompact ? 28 : 30)
+        property int pillHeight: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 32 : 36) : (leftWidgetRoot.isCompact ? 32 : 36)
 
         IconButton {
             id: helpButton
             height: leftLayout.pillHeight
             width: leftLayout.pillHeight
             visible: true
-            iconOffsetX: 0
+            iconOffsetX: -2
 
-            cornerRadius: Math.round(leftLayout.pillHeight / 2)
+            cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
             buttonIcon: "󰒓"
-            iconFontSize: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 21 : 22) : (leftWidgetRoot.isCompact ? 21 : 22)
+            iconFontSize: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 16 : 18) : (leftWidgetRoot.isCompact ? 16 : 18)
             accentColor: leftWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0
             textColor: isHoveredOrHighlighted ? ThemeBackend.text : (leftWidgetRoot.isCompact ? ThemeBackend.subtext0 : ThemeBackend.overlay2)
 
@@ -81,7 +81,7 @@ Rectangle {
             }
             Behavior on opacity { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
 
-            onClicked: PopupController.handleCommand("toggle", "guide", "")
+            onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle guide"])
         }
     }
 }

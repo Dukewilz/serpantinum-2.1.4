@@ -25,7 +25,7 @@ Rectangle {
     property real configuredSpacing: Math.max(1, Math.min(6, cavaSettings.spacing !== undefined ? cavaSettings.spacing : 3))
     property bool isVisVisible: moduleActive && showLayout
     property bool isSubscribed: false
-    readonly property bool shouldSubscribe: isVisVisible && MprisController.isPlaying
+    readonly property bool shouldSubscribe: isVisVisible
 
     onShouldSubscribeChanged: updateSubscription()
 
@@ -100,7 +100,7 @@ Rectangle {
     color: isGrouped ? "transparent" : (isSolid ? (distinctPills ? Qt.darker(ThemeBackend.surface0, 1.15) : "transparent") : ThemeBackend.base)
     clip: true
 
-    property real targetWidth: (moduleActive && innerLayout.implicitWidth > 0) ? (innerLayout.implicitWidth + (barWindow ? barWindow.s(isCompact ? 14 : 16) : (isCompact ? 14 : 16))) : 0
+    property real targetWidth: (moduleActive && innerLayout.implicitWidth > 0) ? (innerLayout.implicitWidth + (barWindow ? barWindow.s(16) : 16)) : 0
     width: targetWidth
     Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutQuint } }
 

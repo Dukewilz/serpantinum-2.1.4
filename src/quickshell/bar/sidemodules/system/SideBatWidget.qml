@@ -221,7 +221,7 @@ Rectangle {
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: PopupController.handleCommand("toggle", "system", "")
+            onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle system"])
         }
     }
 }

@@ -18,7 +18,6 @@ Rectangle {
     property bool moduleActive: true
     property bool isGrouped: false
     property bool isCompact: isGrouped || (isSolid && distinctPills)
-    property bool isDesktop: false
     property string btStatus: "Off"
     property string btIcon: "󰂲"
     property string btDevice: "Off"
@@ -31,25 +30,7 @@ Rectangle {
         updateBtData();
     }
 
-    onModuleActiveChanged: {
-        if (!moduleActive) {
-            chassisDetector.running = false;
-        } else {
-            chassisDetector.running = true;
-            updateBtData();
-        }
-    }
-
-    Process {
-        id: chassisDetector
-        running: btWidgetRoot.moduleActive
-        command: ["bash", "-c", "if ls /sys/class/power_supply/BAT* 1> /dev/null 2>&1; then echo 'laptop'; else echo 'desktop'; fi"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                isDesktop = (this.text.trim() === "desktop");
-            }
-        }
-    }
+    onModuleActiveChanged: if (moduleActive) updateBtData()
 
     function getBtDevicesList() {
         let adapter = Bluetooth.defaultAdapter;
@@ -95,12 +76,12 @@ Rectangle {
             let nameLower = name.toLowerCase();
 
             let icon = "󰂯";
-            if (typeLower.indexOf("headset") !== -1 || typeLower.indexOf("headphone") !== -1 || nameLower.indexOf("headphone") !== -1 || nameLower.indexOf("buds") !== -1 || nameLower.indexOf("pods") !== -1) icon = "🎧";
-            else if (typeLower.indexOf("audio") !== -1 || typeLower.indexOf("speaker") !== -1 || typeLower.indexOf("card") !== -1 || nameLower.indexOf("speaker") !== -1) icon = "📻";
-            else if (typeLower.indexOf("phone") !== -1 || nameLower.indexOf("phone") !== -1 || nameLower.indexOf("iphone") !== -1 || nameLower.indexOf("android") !== -1) icon = "📱";
+            if (typeLower.indexOf("headset") !== -1 || typeLower.indexOf("headphone") !== -1 || nameLower.indexOf("headphone") !== -1 || nameLower.indexOf("buds") !== -1 || nameLower.indexOf("pods") !== -1) icon = "󰋋";
+            else if (typeLower.indexOf("audio") !== -1 || typeLower.indexOf("speaker") !== -1 || typeLower.indexOf("card") !== -1 || nameLower.indexOf("speaker") !== -1) icon = "󰓃";
+            else if (typeLower.indexOf("phone") !== -1 || nameLower.indexOf("phone") !== -1 || nameLower.indexOf("iphone") !== -1 || nameLower.indexOf("android") !== -1) icon = "󰏲";
             else if (typeLower.indexOf("mouse") !== -1 || nameLower.indexOf("mouse") !== -1) icon = "󰍽";
-            else if (typeLower.indexOf("keyboard") !== -1 || nameLower.indexOf("keyboard") !== -1) icon = "⌨️";
-            else if (typeLower.indexOf("controller") !== -1 || nameLower.indexOf("controller") !== -1) icon = "🎮";
+            else if (typeLower.indexOf("keyboard") !== -1 || nameLower.indexOf("keyboard") !== -1) icon = "󰌓";
+            else if (typeLower.indexOf("controller") !== -1 || nameLower.indexOf("controller") !== -1) icon = "󰊴";
 
             btIcon = icon;
             btDevice = name;
@@ -163,10 +144,10 @@ Rectangle {
     color: isGrouped ? "transparent" : (isSolid ? (distinctPills ? Qt.darker(ThemeBackend.surface0, 1.15) : "transparent") : ThemeBackend.base)
     clip: true
 
-    property real targetWidth: (moduleActive && !isDesktop && sysLayout.implicitWidth > 0) ? (sysLayout.implicitWidth + (barWindow ? barWindow.s(isCompact ? 8 : 10) : (isCompact ? 8 : 10))) : 0
+    property real targetWidth: (moduleActive && sysLayout.implicitWidth > 0) ? (sysLayout.implicitWidth + (barWindow ? barWindow.s(isCompact ? 8 : 10) : (isCompact ? 8 : 10))) : 0
     width: targetWidth
 
-    opacity: (showLayout && moduleActive && !isDesktop) ? ((barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0) : 0.0
+    opacity: (showLayout && moduleActive) ? ((barWindow && barWindow.barOpacity !== undefined) ? barWindow.barOpacity : 1.0) : 0.0
     visible: opacity > 0
     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
@@ -197,7 +178,7 @@ Rectangle {
             accentColor: isActive ? (btWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.mauve, 1.08) : ThemeBackend.mauve) : (btWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0)
             textColor: isActive ? ThemeBackend.base : (btWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.text, 1.05) : ThemeBackend.text)
 
-            property real targetWidth: isDesktop ? 0 : implicitWidth
+            property real targetWidth: implicitWidth
             width: targetWidth
             Behavior on width { NumberAnimation { duration: 480; easing.type: Easing.OutQuint } }
 

@@ -93,7 +93,7 @@ Rectangle {
                 height: mediaLayoutContainer.height
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: PopupController.handleCommand("toggle", "music", "")
+                onClicked: Quickshell.execDetached(["bash", "-c", Caching.serpantinumDir + "/scripts/qs_manager.sh toggle music"])
 
                 Row {
                     id: infoLayout

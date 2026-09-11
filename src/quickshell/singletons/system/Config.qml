@@ -9,78 +9,152 @@ Item {
     readonly property string homeDir: Quickshell.env("HOME")
     readonly property string userConfigDir: homeDir + "/.config/serpantinum"
     readonly property string settingsJsonPath: Quickshell.env("QS_SETTINGS") ? Quickshell.env("QS_SETTINGS") : (userConfigDir + "/settings.json")
+    readonly property string lastGoodJsonPath: settingsJsonPath + ".v24-last-good"
 
     property bool dataReady: false
     property var rawSettings: ({})
-    property var pendingUpdates: ({})
+    property var pendingPatch: ({})
+    property var activePatch: ({})
+    property bool writeInFlight: false
+    property bool reloadRequested: false
 
     signal settingsLoaded()
-
-    function sh(cmd) {
-        Quickshell.execDetached(["bash", "-c", cmd]);
-    }
 
     function getSetting(key, fallbackValue) {
         return (rawSettings && rawSettings.hasOwnProperty(key)) ? rawSettings[key] : fallbackValue;
     }
 
+    function hasKeys(obj) {
+        return obj && Object.keys(obj).length > 0;
+    }
+
+    function mergeObjects(base, patch) {
+        let merged = Object.assign({}, base || ({}));
+        if (patch) {
+            for (let key in patch) merged[key] = patch[key];
+        }
+        return merged;
+    }
+
+    // Coalesce rapid slider events and keep exactly one writer process active.
+    // The JSON payload and path are argv values, so quotes in settings cannot
+    // become shell syntax. The on-disk merge remains atomic and lock-protected.
+    function queueJsonPatch(dataObj) {
+        if (!dataReady || !dataObj || typeof dataObj !== "object" || Array.isArray(dataObj)) return;
+        pendingPatch = mergeObjects(pendingPatch, dataObj);
+        writeDebounce.restart();
+    }
+
+    function startNextWrite() {
+        if (writeInFlight || !hasKeys(pendingPatch)) return;
+
+        activePatch = pendingPatch;
+        pendingPatch = ({});
+        settingsWriter.command = [
+            "bash", "-c",
+            "set -e; path=$1; backup=$2; patch=$3; " +
+            "mkdir -p -- \"$(dirname -- \"$path\")\"; " +
+            "exec 9>\"${path}.lock\"; flock 9; " +
+            "if ! jq -e 'type == \"object\"' \"$path\" >/dev/null 2>&1; then " +
+            "  if jq -e 'type == \"object\"' \"$backup\" >/dev/null 2>&1; then cp -f -- \"$backup\" \"$path\"; else exit 65; fi; " +
+            "fi; " +
+            "tmp=$(mktemp \"${path}.tmp.XXXXXX\"); " +
+            "trap 'rm -f -- \"$tmp\"' EXIT; " +
+            "jq --argjson patch \"$patch\" 'if type == \"object\" then . + $patch else error(\"settings root is not an object\") end' \"$path\" > \"$tmp\"; " +
+            "jq -e 'type == \"object\"' \"$tmp\" >/dev/null; " +
+            "chmod 600 \"$tmp\"; mv -f -- \"$tmp\" \"$path\"; trap - EXIT; " +
+            "backup_tmp=$(mktemp \"${backup}.tmp.XXXXXX\"); cp -f -- \"$path\" \"$backup_tmp\"; chmod 600 \"$backup_tmp\"; mv -f -- \"$backup_tmp\" \"$backup\"",
+            "serpantinum-config-writer",
+            settingsJsonPath,
+            lastGoodJsonPath,
+            JSON.stringify(activePatch)
+        ];
+        writeInFlight = true;
+        settingsWriter.running = true;
+    }
+
     function setSetting(key, value) {
-        let obj = {};
-        obj[key] = value;
-        updateJsonBulk(obj);
+        if (!dataReady) return;
+        let patch = ({});
+        patch[key] = value;
+        let temp = Object.assign({}, rawSettings);
+        temp[key] = value;
+        rawSettings = temp;
+        queueJsonPatch(patch);
     }
 
     function updateJsonBulk(dataObj) {
+        if (!dataReady || !dataObj || typeof dataObj !== "object" || Array.isArray(dataObj)) return;
         let temp = Object.assign({}, rawSettings);
-        for (let key in dataObj) {
-            temp[key] = dataObj[key];
-            pendingUpdates[key] = dataObj[key];
-        }
+        for (let key in dataObj) temp[key] = dataObj[key];
         rawSettings = temp;
-
-        saveTimer.restart();
+        queueJsonPatch(dataObj);
     }
 
-    function flush() {
-        let keys = Object.keys(pendingUpdates);
-        if (keys.length === 0) return;
-
-        let patchObj = pendingUpdates;
-        pendingUpdates = ({});
-
-        let patchStr = JSON.stringify(patchObj);
-        let fallbackStr = JSON.stringify(rawSettings);
-
-        let script =
-            'target="$1"\n' +
-            'patch="$2"\n' +
-            'fallback="$3"\n' +
-            'dir="$(dirname "$target")"\n' +
-            'lock="$target.lock"\n' +
-            'mkdir -p "$dir" || exit 1\n' +
-            'exec 200>"$lock" || exit 1\n' +
-            'flock -x 200 || exit 1\n' +
-            'tmp="$(mktemp "$target.XXXXXX.tmp" 2>/dev/null || mktemp -p "$dir" settings.XXXXXX.tmp)" || exit 1\n' +
-            'trap \'rm -f "$tmp"\' EXIT\n' +
-            'if [ -s "$target" ] && jq -e . "$target" >/dev/null 2>&1; then\n' +
-            '  jq --argjson p "$patch" \'. + $p\' "$target" > "$tmp" 2>/dev/null\n' +
-            'else\n' +
-            '  jq -n --argjson fb "$fallback" --argjson p "$patch" \'($fb // {}) + ($p // {})\' > "$tmp" 2>/dev/null\n' +
-            'fi\n' +
-            'if [ -s "$tmp" ] && jq -e . "$tmp" >/dev/null 2>&1; then\n' +
-            '  mv -f "$tmp" "$target"\n' +
-            'fi\n' +
-            'rm -f "$tmp"\n';
-
-        Quickshell.execDetached(["bash", "-c", script, "_", settingsJsonPath, patchStr, fallbackStr]);
+    // Super+R must not destroy a debounced change.  Flush the queue and only
+    // reload once the atomic writer has completed successfully.
+    function requestReload() {
+        reloadRequested = true;
+        writeDebounce.stop();
+        if (!writeInFlight && hasKeys(pendingPatch)) {
+            startNextWrite();
+        } else if (!writeInFlight) {
+            reloadTimer.restart();
+        }
     }
 
     Timer {
-        id: saveTimer
-        interval: 150
+        id: writeDebounce
+        interval: 120
         repeat: false
+        onTriggered: config.startNextWrite()
+    }
+
+    Timer {
+        id: reloadTimer
+        interval: 30
+        repeat: false
+        onTriggered: {
+            if (config.writeInFlight || config.hasKeys(config.pendingPatch)) {
+                config.requestReload();
+                return;
+            }
+            config.reloadRequested = false;
+            Quickshell.reload(true);
+        }
+    }
+
+    Process {
+        id: settingsWriter
         running: false
-        onTriggered: config.flush()
+        onExited: (exitCode) => {
+            let completedPatch = config.activePatch;
+            config.writeInFlight = false;
+            config.activePatch = ({});
+            if (exitCode !== 0) {
+                // Preserve the user's most recent values in memory so a
+                // transient I/O failure cannot silently turn into defaults.
+                config.pendingPatch = config.mergeObjects(completedPatch, config.pendingPatch);
+                config.reloadRequested = false;
+                console.warn("Serpantinum settings write failed with exit code", exitCode);
+                return;
+            }
+            if (config.hasKeys(config.pendingPatch)) {
+                if (config.reloadRequested) config.startNextWrite();
+                else writeDebounce.restart();
+            } else if (settingsWatcher.path) {
+                settingsWatcher.reload();
+                if (config.reloadRequested) reloadTimer.restart();
+            }
+        }
+    }
+
+    Process {
+        id: settingsBootstrap
+        running: false
+        onExited: {
+            if (settingsWatcher.path) settingsWatcher.reload();
+        }
     }
 
     FileView {
@@ -88,35 +162,47 @@ Item {
         path: config.settingsJsonPath
         watchChanges: true
         onFileChanged: reload()
-
         onLoaded: {
-            if (Object.keys(config.pendingUpdates).length > 0) return;
-
             try {
                 let raw = typeof text === "function" ? text() : text;
-                if (typeof raw === "string") {
-                    let trimmed = raw.trim();
-                    if (trimmed.length > 0) {
-                        config.rawSettings = JSON.parse(trimmed);
-                    }
+                if (typeof raw !== "string" || raw.trim().length === 0) return;
+
+                let diskSettings = JSON.parse(raw.trim());
+                if (!diskSettings || typeof diskSettings !== "object" || Array.isArray(diskSettings)) return;
+
+                // A FileView reload from an earlier atomic rename must not
+                // roll the live UI back while a newer write waits.
+                if (config.writeInFlight || config.hasKeys(config.pendingPatch)) {
+                    diskSettings = config.mergeObjects(diskSettings, config.activePatch);
+                    diskSettings = config.mergeObjects(diskSettings, config.pendingPatch);
                 }
+                config.rawSettings = diskSettings;
+                config.dataReady = true;
+                config.settingsLoaded();
             } catch (e) {
+                // Keep the last in-memory state and never announce an invalid
+                // or transiently empty file as ready; Guide defaults must not
+                // be allowed to overwrite it.
+                console.warn("Ignoring invalid Serpantinum settings JSON:", e);
             }
-            config.settingsLoaded();
-            config.dataReady = true;
         }
     }
 
     Component.onCompleted: {
-        if (settingsWatcher.path) {
-            settingsWatcher.reload();
-        }
-    }
-
-    Component.onDestruction: {
-        if (saveTimer.running) {
-            saveTimer.stop();
-            config.flush();
-        }
+        if (!settingsWatcher.path) return;
+        settingsBootstrap.command = [
+            "bash", "-c",
+            "set -e; path=$1; backup=$2; mkdir -p -- \"$(dirname -- \"$path\")\"; " +
+            "exec 9>\"${path}.lock\"; flock 9; " +
+            "if jq -e 'type == \"object\"' \"$path\" >/dev/null 2>&1; then :; " +
+            "elif jq -e 'type == \"object\"' \"$backup\" >/dev/null 2>&1; then cp -f -- \"$backup\" \"$path\"; " +
+            "elif [ ! -e \"$path\" ]; then printf '{}' > \"$path\"; " +
+            "else exit 65; fi; " +
+            "tmp=$(mktemp \"${backup}.tmp.XXXXXX\"); cp -f -- \"$path\" \"$tmp\"; chmod 600 \"$tmp\"; mv -f -- \"$tmp\" \"$backup\"",
+            "serpantinum-config-bootstrap",
+            settingsJsonPath,
+            lastGoodJsonPath
+        ];
+        settingsBootstrap.running = true;
     }
 }

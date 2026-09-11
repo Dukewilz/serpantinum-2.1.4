@@ -396,13 +396,9 @@ Item {
         }
 
         Text {
-            x: Math.round((parent.width - implicitWidth) / 2)
-            y: Math.round((parent.height - implicitHeight) / 2) - Math.round(root.s(2))
+            anchors.centerIn: parent
             font.family: "Iosevka Nerd Font"
             font.pixelSize: root.s(22)
-            renderType: Text.NativeRendering
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
             color: qaBtn.isActive ? ThemeBackend.crust : (qaMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
             text: qaBtn.iconText
             Behavior on color {
@@ -427,7 +423,7 @@ Item {
     Rectangle {
         id: sidebarPanel
         anchors.fill: parent
-        color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.surface0, 0.22) : Qt.alpha(ThemeBackend.surface0, ThemeBackend.uiBackgroundOpacity)
+        color: Qt.alpha(ThemeBackend.surface0, ThemeBackend.uiBackgroundOpacity)
         radius: Math.min(ThemeBackend.borderRadius, root.s(28))
         border.width: 1
         border.color: Qt.alpha(ThemeBackend.text, 0.08)
@@ -438,7 +434,6 @@ Item {
         AmbientBackdrop {
             anchors.fill: parent
             z: 0
-            cornerRadius: parent.radius
             accentColor: ThemeBackend.mauve
             secondaryColor: ThemeBackend.sapphire
             tertiaryColor: ThemeBackend.teal
@@ -531,16 +526,13 @@ Item {
 
                         ClickButton {
                             id: logoutBtn
-                            property bool confirmLogout: false
-                            enabled: root.visible && root.introTop >= 0.99
-                            onVisibleChanged: if (!visible) confirmLogout = false
-                            Timer { interval: 4000; running: logoutBtn.confirmLogout; onTriggered: logoutBtn.confirmLogout = false }
+                            property bool awaitingConfirmation: false
                             Layout.alignment: Qt.AlignTop | Qt.AlignRight
                             Layout.preferredWidth: root.s(92)
                             Layout.preferredHeight: root.s(34)
                             horizontalPadding: root.s(10)
                             cornerRadius: root.s(12)
-                            buttonText: confirmLogout ? "Confirm?" : I18n.t("syspanel.user.logout")
+                            buttonText: awaitingConfirmation ? "Confirm" : I18n.t("syspanel.user.logout")
                             textFontSize: root.s(11)
                             buttonIcon: "󰍃"
                             iconFontSize: root.s(14)
@@ -557,9 +549,20 @@ Item {
                                 }
                             }
 
+                            Timer {
+                                id: logoutConfirmTimer
+                                interval: 2600
+                                onTriggered: logoutBtn.awaitingConfirmation = false
+                            }
+
                             onTriggered: {
-                                if (!confirmLogout) { confirmLogout = true; return; }
-                                confirmLogout = false;
+                                if (!awaitingConfirmation) {
+                                    awaitingConfirmation = true;
+                                    logoutConfirmTimer.restart();
+                                    return;
+                                }
+                                logoutConfirmTimer.stop();
+                                awaitingConfirmation = false;
                                 logoutOpenTimer.start();
                             }
                         }
@@ -821,29 +824,46 @@ Item {
                                 let target = !nightLightBtn.isActive;
                                 nightLightBtn.isActive = target;
 
-                                let monNames = [];
                                 let ds = typeof Config !== "undefined" ? Config.getSetting("display", {"monitors": {}}) : {"monitors": {}};
                                 let mons = (ds && ds.monitors) ? ds.monitors : {};
-                                for (let m in mons) {
-                                    if (monNames.indexOf(m) === -1) {
-                                        monNames.push(m);
-                                    }
-                                }
-                                if (typeof Quickshell !== "undefined" && Quickshell.screens) {
-                                    for (let i = 0; i < Quickshell.screens.length; i++) {
-                                        let scr = Quickshell.screens[i];
-                                        if (scr && scr.name && monNames.indexOf(scr.name) === -1) {
-                                            monNames.push(scr.name);
+                                if (typeof BlueLight !== "undefined" && typeof BlueLight.setEnabled === "function") {
+                                    let monNames = [];
+                                    for (let m in mons) {
+                                        if (monNames.indexOf(m) === -1) {
+                                            monNames.push(m);
                                         }
                                     }
-                                }
+                                    if (typeof Quickshell !== "undefined" && Quickshell.screens) {
+                                        for (let i = 0; i < Quickshell.screens.length; i++) {
+                                            let scr = Quickshell.screens[i];
+                                            if (scr && scr.name && monNames.indexOf(scr.name) === -1) {
+                                                monNames.push(scr.name);
+                                            }
+                                        }
+                                    }
 
-                                if (monNames.length > 0) {
-                                    for (let i = 0; i < monNames.length; i++) {
-                                        BlueLight.setEnabled(monNames[i], target);
+                                    if (monNames.length > 0) {
+                                        for (let i = 0; i < monNames.length; i++) {
+                                            BlueLight.setEnabled(monNames[i], target);
+                                        }
+                                    } else {
+                                        BlueLight.setEnabled("", target);
                                     }
                                 } else {
-                                    BlueLight.setEnabled("", target);
+                                    for (let mName in mons) {
+                                        let mSet = mons[mName] || {};
+                                        let temp = mSet.temperature !== undefined ? mSet.temperature : 50;
+                                        let kelvin = Math.round(6500 - (temp / 100) * (6500 - 2500));
+                                        if (target) {
+                                            Quickshell.execDetached(["bash", Caching.serpantinumDir + "/scripts/blue_light_filter.sh", "set", kelvin.toString(), mName]);
+                                        } else {
+                                            Quickshell.execDetached(["bash", Caching.serpantinumDir + "/scripts/blue_light_filter.sh", "reset", mName]);
+                                        }
+                                        mSet.enabled = target;
+                                        mons[mName] = mSet;
+                                    }
+                                    ds.monitors = mons;
+                                    Config.setSetting("display", ds);
                                 }
                                 nightLightBtn.updateState();
                             }
@@ -1127,13 +1147,8 @@ Item {
 
                             Text {
                                 anchors.centerIn: parent
-                                anchors.verticalCenterOffset: -root.s(1.5)
-                                font.family: cmd === "sleep" ? ThemeBackend.fontFamily : "Iosevka Nerd Font"
-                                font.pixelSize: root.s(cmd === "sleep" ? 13 : 24)
-                                font.weight: cmd === "sleep" ? Font.Medium : Font.Normal
-                                renderType: Text.NativeRendering
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                                font.family: "Iosevka Nerd Font"
+                                font.pixelSize: root.s(24)
                                 color: isDisabled ? ThemeBackend.surface2 : (actionMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
                                 text: icon
                                 Behavior on color {
@@ -1149,13 +1164,9 @@ Item {
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    y: (actionCapsule.height / 2) - (height / 2) - (actionCapsule.height - parent.height) - root.s(1.5)
-                                    font.family: cmd === "sleep" ? ThemeBackend.fontFamily : "Iosevka Nerd Font"
-                                    font.pixelSize: root.s(cmd === "sleep" ? 13 : 24)
-                                    font.weight: cmd === "sleep" ? Font.Medium : Font.Normal
-                                    renderType: Text.NativeRendering
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
+                                    y: (actionCapsule.height / 2) - (height / 2) - (actionCapsule.height - parent.height)
+                                    font.family: "Iosevka Nerd Font"
+                                    font.pixelSize: root.s(24)
                                     color: ThemeBackend.crust
                                     text: icon
                                 }

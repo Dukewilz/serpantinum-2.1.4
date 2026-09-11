@@ -570,7 +570,7 @@ Item {
             id: innerBg
             anchors.fill: parent
             anchors.margins: root.s(3)
-            color: ThemeBackend.uiBackgroundUseWallpaper ? Qt.alpha(ThemeBackend.base, 0.22) : Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
+            color: Qt.alpha(ThemeBackend.base, ThemeBackend.uiBackgroundOpacity)
             radius: ThemeBackend.borderRadius
 
             layer.enabled: true
@@ -578,7 +578,6 @@ Item {
             AmbientBackdrop {
                 anchors.fill: parent
                 z: 0
-                cornerRadius: parent.radius
                 accentColor: ThemeBackend.mauve
                 secondaryColor: ThemeBackend.sapphire
                 tertiaryColor: ThemeBackend.pink
@@ -1651,7 +1650,7 @@ Item {
 
                             Timer {
                                 interval: 16
-                                running: root.eqLightningFade < 1.0 && root.eqLightningProgress > 0.0
+                                running: root.visible && root.eqLightningFade < 1.0 && root.eqLightningProgress > 0.0
                                 repeat: true
                                 onTriggered: lightningCanvas.requestPaint()
                             }
