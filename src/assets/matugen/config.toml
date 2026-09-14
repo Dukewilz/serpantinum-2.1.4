@@ -16,3 +16,4 @@ output_path = "~/.config/kitty/colors.conf"
 [templates.cava]
 input_path = "templates/cava-colors.ini.template"
 output_path = "~/.config/cava/config"
+post_hook = "~/.config/cava/reload-theme.sh"

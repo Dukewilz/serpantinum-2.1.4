@@ -44,9 +44,32 @@ PanelWindow {
     property bool appsLoaded: false
 
     Component.onCompleted: {
-        loadApps();
-        appsLoaded = true;
-        executeFilter("");
+        startupPollTimer.restart();
+    }
+
+    // Poll setiap 300ms sampai DesktopEntries benar-benar siap dengan data
+    Timer {
+        id: startupPollTimer
+        interval: 300
+        repeat: true
+        property int attempts: 0
+        onTriggered: {
+            attempts++;
+            let ready = (typeof DesktopEntries !== "undefined")
+                && DesktopEntries.applications
+                && DesktopEntries.applications.values
+                && DesktopEntries.applications.values.length > 0;
+
+            if (ready) {
+                startupPollTimer.stop();
+                launcherWindow.loadApps();
+                launcherWindow.executeFilter("");
+                launcherWindow.appsLoaded = true;
+            } else if (attempts >= 30) {
+                // Stop after 9 seconds regardless
+                startupPollTimer.stop();
+            }
+        }
     }
 
     Connections {
@@ -76,7 +99,9 @@ PanelWindow {
                 launcherWindow.loadApps();
                 launcherWindow.executeFilter(searchInput.text);
             } else {
-                launcherWindow.appsLoaded = false;
+                // Load in background so list is ready when launcher opens
+                launcherWindow.loadApps();
+                launcherWindow.appsLoaded = launcherWindow.allApps.length > 0;
             }
         }
         function onCountChanged() {
@@ -84,7 +109,8 @@ PanelWindow {
                 launcherWindow.loadApps();
                 launcherWindow.executeFilter(searchInput.text);
             } else {
-                launcherWindow.appsLoaded = false;
+                launcherWindow.loadApps();
+                launcherWindow.appsLoaded = launcherWindow.allApps.length > 0;
             }
         }
     }
@@ -308,9 +334,11 @@ PanelWindow {
 
     onIsVisibleChanged: {
         if (isVisible) {
-            if (!launcherWindow.appsLoaded) {
+            // Always reload if app list is empty — covers the race condition
+            // where DesktopEntries finishes scanning after Component.onCompleted.
+            if (!launcherWindow.appsLoaded || launcherWindow.allApps.length === 0) {
                 launcherWindow.loadApps();
-                launcherWindow.appsLoaded = true;
+                launcherWindow.appsLoaded = launcherWindow.allApps.length > 0;
             }
             if (searchInput.text !== "") {
                 searchInput.clear();
