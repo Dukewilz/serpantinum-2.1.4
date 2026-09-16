@@ -50,6 +50,7 @@ PanelWindow {
     readonly property bool isToggleActive: stateVal === "on" || stateVal === "true" || stateVal === "1"
 
     readonly property bool isToggleAllowed: {
+        if (!isToggleKind) return true;
         if (isVerticalLayout) return false;
         if (kind === "capslock") return showCapsLock;
         if (kind === "numlock") return showNumLock;
@@ -184,7 +185,7 @@ PanelWindow {
     property bool isBottomBar: barPosition === "bottom"
     property bool isFill: barStyle === "fill"
     property bool isSolid: (barStyle === "solid" || barStyle === "fill") && Math.round(barOpacity * 100) >= 100
-    readonly property bool isAttached: attachToBar && isSolid && !isBarEffectivelyHidden && (!isSideBar || !isToggleKind)
+    readonly property bool isAttached: attachToBar && isSolid && !isBarEffectivelyHidden && (!isSideBar || !isToggleKind) && (isSideBar ? isVertical : !isVertical)
     readonly property bool isVerticalLayout: isAttached ? isSideBar : isVertical
 
     property real barHeight: {

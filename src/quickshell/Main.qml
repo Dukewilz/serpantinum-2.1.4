@@ -54,13 +54,26 @@ PanelWindow {
     }
 
     function reportWidgetState() {
-        if (!Caching.runDir) return;
+        if (typeof Caching === "undefined" || !Caching.runDir) return;
         let sName = (masterWindow.currentActive === "hidden" || !masterWindow.screen) ? "" : (masterWindow.screen.name || "");
         let payload = JSON.stringify({
             widget: masterWindow.currentActive,
             screen: sName
         });
         Quickshell.execDetached(["bash", "-c", "echo '" + payload + "' > " + Caching.runDir + "/current_widget"]);
+    }
+
+    Process {
+        id: startupResetProcess
+        command: ["bash", "-c", `[ -n "${Caching.runDir}" ] && echo '{"widget":"hidden","screen":""}' > "${Caching.runDir}/current_widget"`]
+        running: true
+    }
+
+    Connections {
+        target: (typeof Caching !== "undefined") ? Caching : null
+        function onRunDirChanged() {
+            masterWindow.reportWidgetState();
+        }
     }
 
     IpcHandler {
@@ -197,7 +210,10 @@ PanelWindow {
 
     visible: isVisible
 
-    mask: Region { item: topBarHole; intersection: Intersection.Xor }
+    mask: Region {
+        item: masterWindow.isCurrentDraggable ? animContainer : topBarHole
+        intersection: masterWindow.isCurrentDraggable ? Intersection.Combine : Intersection.Xor
+    }
 
     property var rawBarSettings: (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar) ? Config.rawSettings.bar : ({})
     property string barPosition: (rawBarSettings && rawBarSettings.position !== undefined) ? rawBarSettings.position : "top"
@@ -214,6 +230,10 @@ PanelWindow {
 
     readonly property bool isBarEffectivelyHidden: barAutohide || isFullscreenActive
     readonly property bool screenReady: masterWindow.width >= 100 && masterWindow.height >= 100
+    readonly property bool isCurrentDraggable: {
+        let t = getLayout(masterWindow.currentActive);
+        return Boolean(t && t.draggable) || masterWindow.currentActive === "guide";
+    }
 
     Item {
         id: topBarHole
@@ -287,7 +307,7 @@ PanelWindow {
 
     MouseArea {
         anchors.fill: parent
-        enabled: masterWindow.isVisible
+        enabled: masterWindow.isVisible && !masterWindow.isCurrentDraggable
         onClicked: switchWidget("hidden", "")
     }
 
@@ -342,6 +362,7 @@ PanelWindow {
     }
 
     Component.onCompleted: {
+        reportWidgetState();
         preloadStartDelay.start();
     }
 
@@ -350,6 +371,12 @@ PanelWindow {
         interval: 900
         repeat: false
         onTriggered: preloadStaggerTimer.start()
+    }
+
+    Component.onDestruction: {
+        if (typeof Caching !== "undefined" && Caching.runDir) {
+            Quickshell.execDetached(["bash", "-c", "echo '{\"widget\":\"hidden\",\"screen\":\"\"}' > " + Caching.runDir + "/current_widget"]);
+        }
     }
 
     Timer {
@@ -386,6 +413,7 @@ PanelWindow {
     property string activeArg: ""
     property bool disableMorph: true
     property int switchGeneration: 0
+    property bool userMoved: false
 
     property int morphDuration:       300
     property int morphDurationSwitch: 300
@@ -443,7 +471,8 @@ PanelWindow {
                 h: result.h,
                 rx: result.rx,
                 ry: result.ry,
-                comp: result.comp
+                comp: result.comp,
+                draggable: result.draggable
             };
 
             if (bp === "top") {
@@ -496,8 +525,10 @@ PanelWindow {
 
     onTargetLayoutChanged: {
         if (!targetLayout || masterWindow.currentActive === "hidden" || !masterWindow.isVisible) return;
-        masterWindow._animX = targetLayout.x;
-        masterWindow._animY = targetLayout.y;
+        if (!masterWindow.userMoved || !masterWindow.isCurrentDraggable) {
+            masterWindow._animX = targetLayout.x;
+            masterWindow._animY = targetLayout.y;
+        }
         masterWindow._animW = targetLayout.w;
         masterWindow._animH = targetLayout.h;
         masterWindow._stageW = targetLayout.w;
@@ -515,6 +546,34 @@ PanelWindow {
         width: masterWindow._animW
         height: masterWindow._animH
         clip: true
+
+        DragHandler {
+            id: windowDragHandler
+            target: null
+            acceptedButtons: Qt.LeftButton
+            enabled: masterWindow.isCurrentDraggable
+
+            property real startX: 0
+            property real startY: 0
+
+            onActiveChanged: {
+                if (active) {
+                    masterWindow.disableMorph = true;
+                    startX = masterWindow._animX;
+                    startY = masterWindow._animY;
+                } else {
+                    masterWindow.disableMorph = false;
+                }
+            }
+
+            onTranslationChanged: {
+                if (active) {
+                    masterWindow.userMoved = true;
+                    masterWindow._animX = startX + translation.x;
+                    masterWindow._animY = startY + translation.y;
+                }
+            }
+        }
 
         Item {
             id: contentStage
@@ -588,6 +647,10 @@ PanelWindow {
         let gen = masterWindow.switchGeneration;
         masterWindow.targetActive = newWidget;
 
+        if (newWidget !== "guide") {
+            masterWindow.userMoved = false;
+        }
+
         if (delayedClear.running) {
             delayedClear.stop();
         }
@@ -658,8 +721,10 @@ PanelWindow {
         let finalX = (finalW !== t.w) ? recenterX(t, finalW) : t.rx;
         let finalY = t.ry;
 
-        masterWindow._animX = finalX;
-        masterWindow._animY = finalY;
+        if (!masterWindow.userMoved || !masterWindow.isCurrentDraggable) {
+            masterWindow._animX = finalX;
+            masterWindow._animY = finalY;
+        }
         masterWindow._animW = finalW;
         masterWindow._animH = finalH;
         masterWindow._stageW = finalW;

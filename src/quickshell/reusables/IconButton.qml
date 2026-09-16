@@ -15,6 +15,17 @@ Item {
     property int iconFontSize: 18
     property int iconOffsetX: 0
     property int iconOffsetY: 0
+    // Nerd Font PUA glyphs have asymmetric side bearings. Centering their
+    // implicit text box therefore leaves the visible glyph slightly right of
+    // the button center. Keep a full-size layout box and compensate only the
+    // optical center; callers can still add a deliberate manual offset.
+    property bool opticalCentering: true
+    readonly property int automaticIconOffsetX: opticalCentering && buttonIcon.length > 0
+        && buttonIcon.charCodeAt(0) >= 0xE000
+        ? -Math.max(1, Math.round(iconFontSize * 0.055)) : 0
+    readonly property int automaticIconOffsetY: opticalCentering && buttonIcon.length > 0
+        && buttonIcon.charCodeAt(0) >= 0xE000
+        ? -Math.max(0, Math.round(iconFontSize * 0.035)) : 0
 
     property color accentColor: "#89b4fa"
     property color textColor: "#11111b"
@@ -51,14 +62,13 @@ Item {
         }
 
         Item {
-            x: root.iconOffsetX
-            y: root.iconOffsetY
+            x: root.iconOffsetX + root.automaticIconOffsetX
+            y: root.iconOffsetY + root.automaticIconOffsetY
             width: parent.width
             height: parent.height
 
             Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.fill: parent
                 text: root.buttonIcon
                 font.family: "Iosevka Nerd Font"
                 font.pixelSize: root.iconFontSize

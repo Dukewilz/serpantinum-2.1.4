@@ -396,9 +396,16 @@ Item {
         }
 
         Text {
-            anchors.centerIn: parent
+            anchors.fill: parent
             font.family: "Iosevka Nerd Font"
             font.pixelSize: root.s(22)
+            renderType: Text.NativeRendering
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            transform: Translate {
+                x: -Math.max(1, Math.round(root.s(22) * 0.055))
+                y: -Math.max(0, Math.round(root.s(22) * 0.035))
+            }
             color: qaBtn.isActive ? ThemeBackend.crust : (qaMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
             text: qaBtn.iconText
             Behavior on color {

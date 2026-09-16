@@ -257,7 +257,16 @@
         "hide_bar": {
           "title": "Düzəliş alətində zolağı gizlət",
           "desc": "Vidcetlərə düzəliş edərkən zolağı avtomatik gizlət"
-        }
+        },
+        "hide_presets": "Hazır şablonları gizlət",
+        "choose_preset": "Şablon seçin",
+        "presets": {
+          "title": "Vidcet şablonları"
+        },
+        "save_preset": {
+          "title": "Preseti yadda saxla"
+        },
+        "preset_name_placeholder": "Presetin adını daxil edin..."
       }
     },
     "bar": {
@@ -586,6 +595,10 @@
       "cascade_scale": {
         "title": "Ən yaxın elementləri böyüt",
         "desc": "Qonşu nişanları pilləli şəkildə böyüt"
+      },
+      "on_top": {
+        "title": "Doku pəncərələrin üzərində yerləşdirin",
+        "desc": "Doku tətbiq pəncərələrinin üzərində görünən saxlayın"
       }
     }
   },
@@ -959,7 +972,8 @@
       "click_to_add": "Vidcet əlavə etmək üçün aşağıdakı alətlər zolağında onun nişanına klikləyin",
       "done": "Hazırdır",
       "widget_singular": "vidcet",
-      "widgets_plural": "vidcet"
+      "widgets_plural": "vidcet",
+      "widgets_short": "v"
     },
     "types": {
       "clock": "Saat",
@@ -967,7 +981,9 @@
       "weather": "Hava",
       "image": "Şəkil",
       "visualizer": "Səs görüntüləyicisi",
-      "user": "İstifadəçi"
+      "user": "İstifadəçi",
+      "usage": "İstifadə",
+      "battery": "Batareya"
     },
     "variants": {
       "digital": "Rəqəmsal",
@@ -981,6 +997,20 @@
       "bars": "Zolaqlar",
       "continuous": "Fasiləsiz",
       "default": "Standart"
+    },
+    "presets": {
+      "minimal": {
+        "name": "Minimal",
+        "desc": "Minimal rəqəmsal saat və yığcam hava məlumatı olan sadə tərtibat."
+      },
+      "media_station": {
+        "name": "Media Stansiyası",
+        "desc": "Mərkəzləşdirilmiş audio vizualizator və dairəvi musiqi pleyeri olan media quraşdırması."
+      },
+      "dashboard": {
+        "name": "İdarəetmə Paneli",
+        "desc": "Rəqəmsal saat, sistem resursları və batareya vəziyyətini göstərən tam iş paneli."
+      }
     }
   },
   "cli": {
@@ -1173,4 +1203,3 @@
     "full_date": "dddd, MMMM dd"
   }
 }
-

@@ -18,10 +18,25 @@ PanelWindow {
     property real wOpacity: 1.0
     property real wRotation: 0
 
+    property bool isRedacting: false
+    property bool initialized: false
+
     property real animX: wX
     property real animY: wY
-    Behavior on animX { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-    Behavior on animY { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
+    Behavior on animX {
+        enabled: root.initialized && !root.isRedacting
+        NumberAnimation {
+            duration: 400
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on animY {
+        enabled: root.initialized && !root.isRedacting
+        NumberAnimation {
+            duration: 400
+            easing.type: Easing.OutCubic
+        }
+    }
 
     property real effectiveWidth: wWidth
     property real effectiveHeight: wHeight
@@ -45,6 +60,12 @@ PanelWindow {
 
     implicitWidth: (Math.round(wRotation || 0) % 180 === 0) ? effectiveWidth : effectiveHeight
     implicitHeight: (Math.round(wRotation || 0) % 180 === 0) ? effectiveHeight : effectiveWidth
+
+    Component.onCompleted: {
+        Qt.callLater(() => {
+            root.initialized = true;
+        });
+    }
 
     Component.onDestruction: visible = false
 

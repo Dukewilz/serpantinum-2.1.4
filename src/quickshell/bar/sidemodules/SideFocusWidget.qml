@@ -25,7 +25,9 @@ Rectangle {
 
     property real topPadding: (isSolid && !distinctPills) ? 0 : (barWindow ? barWindow.s(6) : 6)
     property real bottomPadding: (isSolid && !distinctPills) ? 0 : (barWindow ? barWindow.s(12) : 12)
-    property real targetHeight: (moduleActive && isFocused) ? (topPadding + focusIconButton.height + innerLayout.spacing + titleTextMain.implicitWidth + bottomPadding) : 0
+    property real maxHeight: barWindow ? barWindow.s(300) : 300
+    property real maxTextHeight: Math.max(0, maxHeight - (topPadding + focusIconButton.height + innerLayout.spacing + bottomPadding))
+    property real targetHeight: (moduleActive && isFocused) ? Math.min(maxHeight, topPadding + focusIconButton.height + innerLayout.spacing + titleClipRect.height + bottomPadding) : 0
 
     x: barWindow ? (barWindow.baseOffsetX !== undefined ? barWindow.baseOffsetX + Math.round((barWindow.barHeight - width) / 2) : 0) : 0
     y: targetY
@@ -83,11 +85,9 @@ Rectangle {
         Item {
             id: titleClipRect
             width: focusIconButton.width
-            height: titleTextMain.implicitWidth
+            height: Math.min(titleTextMain.implicitWidth, sideFocusRoot.maxTextHeight)
             clip: true
             anchors.horizontalCenter: parent.horizontalCenter
-
-            property int marqueeSpacing: barWindow ? barWindow.s(30) : 30
 
             Item {
                 id: rotator
@@ -96,55 +96,14 @@ Rectangle {
                 height: titleClipRect.width
                 rotation: 90
 
-                Item {
-                    id: marqueeContainer
-                    height: parent.height
-
-                    Row {
-                        spacing: titleClipRect.marqueeSpacing
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        Text {
-                            id: titleTextMain
-                            text: sideFocusRoot.displayText
-                            color: ThemeBackend.text
-                            font.pixelSize: barWindow ? barWindow.s(sideFocusRoot.isCompact ? 11 : 12) : (sideFocusRoot.isCompact ? 11 : 12)
-
-                            onTextChanged: {
-                                titleAnim.stop();
-                                marqueeContainer.x = 0;
-                                if (titleTextMain.implicitWidth > titleClipRect.height) {
-                                    titleAnim.start();
-                                }
-                            }
-                        }
-
-                        Text {
-                            id: titleTextClone
-                            text: titleTextMain.text
-                            color: ThemeBackend.text
-                            font.pixelSize: barWindow ? barWindow.s(sideFocusRoot.isCompact ? 11 : 12) : (sideFocusRoot.isCompact ? 11 : 12)
-                            visible: titleTextMain.implicitWidth > titleClipRect.height
-                        }
-                    }
-
-                    SequentialAnimation {
-                        id: titleAnim
-                        loops: Animation.Infinite
-                        running: titleTextMain.implicitWidth > titleClipRect.height
-
-                        PauseAnimation { duration: 3000 }
-
-                        NumberAnimation {
-                            target: marqueeContainer
-                            property: "x"
-                            from: 0
-                            to: -(titleTextMain.implicitWidth + titleClipRect.marqueeSpacing)
-                            duration: Math.max(1, (titleTextMain.implicitWidth + titleClipRect.marqueeSpacing) * 25)
-                        }
-
-                        PropertyAction { target: marqueeContainer; property: "x"; value: 0 }
-                    }
+                Text {
+                    id: titleTextMain
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: rotator.width
+                    text: sideFocusRoot.displayText
+                    color: ThemeBackend.text
+                    font.pixelSize: barWindow ? barWindow.s(sideFocusRoot.isCompact ? 11 : 12) : (sideFocusRoot.isCompact ? 11 : 12)
+                    elide: Text.ElideRight
                 }
             }
         }

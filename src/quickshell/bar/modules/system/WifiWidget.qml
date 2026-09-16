@@ -36,9 +36,25 @@ Rectangle {
         updateNetworkData();
     }
 
-    onModuleActiveChanged: if (moduleActive) {
-        findDevices();
-        updateNetworkData();
+    onModuleActiveChanged: {
+        if (!moduleActive) {
+            chassisDetector.running = false;
+        } else {
+            chassisDetector.running = true;
+            findDevices();
+            updateNetworkData();
+        }
+    }
+
+    Process {
+        id: chassisDetector
+        running: wifiWidgetRoot.moduleActive
+        command: ["bash", "-c", "if ls /sys/class/power_supply/BAT* 1> /dev/null 2>&1; then echo 'laptop'; else echo 'desktop'; fi"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                isDesktop = (this.text.trim() === "desktop");
+            }
+        }
     }
 
     function isEthDevice(dev) {
@@ -62,6 +78,7 @@ Rectangle {
                 wifiWidgetRoot.wifiDevice = d;
             }
         }
+        return list;
     }
 
     function getWifiNetworksList() {

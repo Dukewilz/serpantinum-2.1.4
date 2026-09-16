@@ -120,18 +120,26 @@ Item {
 
                     Row {
                         anchors.centerIn: parent
-                        spacing: 4
+                        height: parent.height
+                        spacing: 6
 
-                        Text {
+                        Item {
                             visible: optionItem.hasIcon
-                            text: optionItem.iconPart
-                            font.family: "Iosevka Nerd Font"
-                            font.pixelSize: root.fontPixelSize
-                            renderType: Text.NativeRendering
-                            color: root.currentIndex === optionItem.index ? root.activeTextColor : root.textColor
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.verticalCenterOffset: -1
-                            Behavior on color { ColorAnimation { duration: 200 } }
+                            width: visible ? Math.max(root.fontPixelSize + 6, 18) : 0
+                            height: parent.height
+
+                            Text {
+                                anchors.fill: parent
+                                text: optionItem.iconPart
+                                font.family: "Iosevka Nerd Font"
+                                font.pixelSize: root.fontPixelSize
+                                renderType: Text.NativeRendering
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                transform: Translate { x: -Math.max(1, Math.round(root.fontPixelSize * 0.055)) }
+                                color: root.currentIndex === optionItem.index ? root.activeTextColor : root.textColor
+                                Behavior on color { ColorAnimation { duration: 200 } }
+                            }
                         }
 
                         Text {

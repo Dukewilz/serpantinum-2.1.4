@@ -1511,6 +1511,8 @@ Item {
                             LeftNumberSetting { title: "Border visibility"; hint: "0–20%"; currentValue: barTabRoot.innerPillBorder; minimumValue: 0; maximumValue: 20; onValueCommitted: function(v) { barTabRoot.innerPillBorder = Math.round(v); barTabRoot.updateBarSettings(); } }
                             LeftNumberSetting { title: "Outer radius"; hint: "8–24 px"; currentValue: barTabRoot.innerPillOuterRadius; minimumValue: 8; maximumValue: 24; onValueCommitted: function(v) { barTabRoot.innerPillOuterRadius = Math.round(v); barTabRoot.updateBarSettings(); } }
                             LeftNumberSetting { title: "Inner radius"; hint: "4–20 px"; currentValue: barTabRoot.innerPillRadius; minimumValue: 4; maximumValue: 20; onValueCommitted: function(v) { barTabRoot.innerPillRadius = Math.round(v); barTabRoot.updateBarSettings(); } }
+                            LeftNumberSetting { title: "Content opacity"; hint: "Icons and text"; currentValue: barTabRoot.currentContentOpacity; minimumValue: 20; maximumValue: 100; onValueCommitted: function(v) { barTabRoot.currentContentOpacity = Math.round(v); barTabRoot.updateBarSettings(); } }
+                            LeftNumberSetting { title: "Surface blur"; hint: "TopBar acrylic blur"; currentValue: barTabRoot.currentBarBlur; minimumValue: 0; maximumValue: 100; onValueCommitted: function(v) { barTabRoot.currentBarBlur = Math.round(v); barTabRoot.updateBarSettings(); } }
                         }
                     }
                 }
@@ -1745,8 +1747,6 @@ Item {
                         columnSpacing: rootObj.s(8)
                         rowSpacing: rootObj.s(8)
 
-                        LeftNumberSetting { title: "Content opacity"; hint: "Icons and text"; currentValue: barTabRoot.currentContentOpacity; minimumValue: 20; maximumValue: 100; onValueCommitted: function(v) { barTabRoot.currentContentOpacity = Math.round(v); barTabRoot.updateBarSettings(); } }
-                        LeftNumberSetting { title: "Surface blur"; hint: "Bar acrylic blur"; currentValue: barTabRoot.currentBarBlur; minimumValue: 0; maximumValue: 100; onValueCommitted: function(v) { barTabRoot.currentBarBlur = Math.round(v); barTabRoot.updateBarSettings(); } }
                         LeftNumberSetting { title: "CAVA bars"; hint: "Visualizer density"; currentValue: barTabRoot.cavaBars; minimumValue: 4; maximumValue: 24; onValueCommitted: function(v) { barTabRoot.cavaBars = Math.round(v); barTabRoot.updateBarSettings(); } }
                         LeftNumberSetting { title: "CAVA width"; hint: "Visualizer bar width"; currentValue: barTabRoot.cavaBarWidth; minimumValue: 2; maximumValue: 6; onValueCommitted: function(v) { barTabRoot.cavaBarWidth = Math.round(v); barTabRoot.updateBarSettings(); } }
                         LeftNumberSetting { title: "CAVA spacing"; hint: "Gap between bars"; currentValue: barTabRoot.cavaSpacing; minimumValue: 1; maximumValue: 6; onValueCommitted: function(v) { barTabRoot.cavaSpacing = Math.round(v); barTabRoot.updateBarSettings(); } }

@@ -97,7 +97,9 @@
       "empty_graphic": {
         "title": "Animação de central vazia",
         "desc": "Exibe o gato dormindo na central quando vazia"
-      }
+      },
+      "test": "Testar notificação",
+      "test_desc": "Esta é uma notificação de teste"
     },
     "idle": {
       "enabled": {
@@ -257,7 +259,16 @@
         "hide_bar": {
           "title": "Ocultar a barra no editor",
           "desc": "Oculta a barra automaticamente ao editar widgets no modo editor"
-        }
+        },
+        "hide_presets": "Ocultar predefinições",
+        "choose_preset": "Escolher predefinição",
+        "presets": {
+          "title": "Predefinições de widgets"
+        },
+        "save_preset": {
+          "title": "Salvar predefinição"
+        },
+        "preset_name_placeholder": "Digite o nome da predefinição..."
       }
     },
     "bar": {
@@ -590,6 +601,10 @@
       "exclusive": {
         "title": "Modo exclusivo",
         "desc": "Impede janelas de ocuparem o espaço da dock"
+      },
+      "on_top": {
+        "title": "Colocar a dock sobre as janelas",
+        "desc": "Manter a dock visível sobre as janelas de aplicativos"
       }
     }
   },
@@ -963,7 +978,8 @@
       "click_to_add": "Clique num ícone na barra inferior para adicionar",
       "done": "Concluir",
       "widget_singular": "widget",
-      "widgets_plural": "widgets"
+      "widgets_plural": "widgets",
+      "widgets_short": "w"
     },
     "types": {
       "clock": "Relógio",
@@ -971,7 +987,9 @@
       "weather": "Clima",
       "image": "Imagem",
       "visualizer": "Visualizador",
-      "user": "Usuário"
+      "user": "Usuário",
+      "usage": "Uso",
+      "battery": "Bateria"
     },
     "variants": {
       "digital": "Digital",
@@ -985,6 +1003,20 @@
       "bars": "Barras",
       "continuous": "Contínuo",
       "default": "Padrão"
+    },
+    "presets": {
+      "minimal": {
+        "name": "Minimalista",
+        "desc": "Layout limpo e sutil com relógio digital minimalista e clima compacto."
+      },
+      "media_station": {
+        "name": "Estação Multimídia",
+        "desc": "Configuração multimídia com barras de visualizador centralizadas e controle de música circular."
+      },
+      "dashboard": {
+        "name": "Painel",
+        "desc": "Monitor de sistema completo com relógio digital, uso de hardware e nível de bateria."
+      }
     }
   },
   "cli": {

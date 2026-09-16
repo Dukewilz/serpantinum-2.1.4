@@ -1048,6 +1048,38 @@ Item {
                     }
                 }
             }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: rootObj.s(4)
+                Layout.leftMargin: rootObj.s(4)
+                Layout.rightMargin: rootObj.s(4)
+                spacing: rootObj.s(12)
+
+                Item { Layout.fillWidth: true }
+
+                ClickButton {
+                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                    implicitHeight: rootObj.s(36)
+                    horizontalPadding: rootObj.s(16)
+                    buttonText: I18n.t("guide.notifications.test", "Test notification")
+                    buttonIcon: "󰂚"
+                    iconFontSize: rootObj.s(16)
+                    textFontSize: rootObj.s(12)
+                    accentColor: ThemeBackend.mauve
+                    textColor: ThemeBackend.crust
+                    cornerRadius: ThemeBackend.borderRadius
+                    onClicked: {
+                        Quickshell.execDetached([
+                            "notify-send",
+                            "-u",
+                            "critical",
+                            I18n.t("guide.notifications.test", "Test notification"),
+                            I18n.t("guide.notifications.test_desc", "This is a test notification")
+                        ]);
+                    }
+                }
+            }
         }
     }
 }

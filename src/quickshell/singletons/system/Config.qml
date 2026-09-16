@@ -36,6 +36,17 @@ Item {
         return merged;
     }
 
+    function setNestedValue(obj, path, value) {
+        let parts = typeof path === "string" ? path.split(".") : [path];
+        let cur = obj;
+        for (let i = 0; i < parts.length - 1; i++) {
+            let part = parts[i];
+            if (!cur[part] || typeof cur[part] !== "object" || Array.isArray(cur[part])) cur[part] = {};
+            cur = cur[part];
+        }
+        cur[parts[parts.length - 1]] = value;
+    }
+
     // Coalesce rapid slider events and keep exactly one writer process active.
     // The JSON payload and path are argv values, so quotes in settings cannot
     // become shell syntax. The on-disk merge remains atomic and lock-protected.
@@ -76,19 +87,36 @@ Item {
     function setSetting(key, value) {
         if (!dataReady) return;
         let patch = ({});
-        patch[key] = value;
-        let temp = Object.assign({}, rawSettings);
-        temp[key] = value;
+        let temp = JSON.parse(JSON.stringify(rawSettings || {}));
+        if (typeof key === "string" && key.indexOf(".") !== -1) {
+            setNestedValue(temp, key, value);
+            let rootKey = key.split(".")[0];
+            patch[rootKey] = temp[rootKey];
+        } else {
+            temp[key] = value;
+            patch[key] = value;
+        }
         rawSettings = temp;
         queueJsonPatch(patch);
     }
 
     function updateJsonBulk(dataObj) {
         if (!dataReady || !dataObj || typeof dataObj !== "object" || Array.isArray(dataObj)) return;
-        let temp = Object.assign({}, rawSettings);
-        for (let key in dataObj) temp[key] = dataObj[key];
+        let temp = JSON.parse(JSON.stringify(rawSettings || {}));
+        let diskPatch = ({});
+        for (let key in dataObj) {
+            let value = dataObj[key];
+            if (typeof key === "string" && key.indexOf(".") !== -1) {
+                setNestedValue(temp, key, value);
+                let rootKey = key.split(".")[0];
+                diskPatch[rootKey] = temp[rootKey];
+            } else {
+                temp[key] = value;
+                diskPatch[key] = value;
+            }
+        }
         rawSettings = temp;
-        queueJsonPatch(dataObj);
+        queueJsonPatch(diskPatch);
     }
 
     // Super+R must not destroy a debounced change.  Flush the queue and only

@@ -97,7 +97,9 @@
       "empty_graphic": {
         "title": "Empty center animation",
         "desc": "Display the sleeping cat graphic in the notification center when empty"
-      }
+      },
+      "test": "Test notification",
+      "test_desc": "This is a test notification"
     },
     "idle": {
       "enabled": {
@@ -257,7 +259,16 @@
         "hide_bar": {
           "title": "Hide the bar in the redactor",
           "desc": "Automatically hide the bar when editing widgets in redactor mode"
-        }
+        },
+        "hide_presets": "Hide Presets",
+        "choose_preset": "Choose a preset",
+        "presets": {
+          "title": "Widget Presets"
+        },
+        "save_preset": {
+          "title": "Save Preset"
+        },
+        "preset_name_placeholder": "Enter preset name..."
       }
     },
     "bar": {
@@ -590,6 +601,10 @@
       "exclusive": {
         "title": "Exclusive mode",
         "desc": "Prevent windows from taking space occupied by the dock"
+      },
+      "on_top": {
+        "title": "Place dock on top of windows",
+        "desc": "Keep the dock visible above application windows"
       }
     }
   },
@@ -963,7 +978,8 @@
       "click_to_add": "Click a widget icon in the bottom toolbar to add it",
       "done": "Done",
       "widget_singular": "widget",
-      "widgets_plural": "widgets"
+      "widgets_plural": "widgets",
+      "widgets_short": "w"
     },
     "types": {
       "clock": "Clock",
@@ -971,7 +987,9 @@
       "weather": "Weather",
       "image": "Image",
       "visualizer": "Visualizer",
-      "user": "User"
+      "user": "User",
+      "usage": "Usage",
+      "battery": "Battery"
     },
     "variants": {
       "digital": "Digital",
@@ -985,6 +1003,17 @@
       "bars": "Bars",
       "continuous": "Continuous",
       "default": "Default"
+    },
+    "presets": {
+      "minimal": {
+        "name": "Minimal"
+      },
+      "media_station": {
+        "name": "Media station"
+      },
+      "dashboard": {
+        "name": "Dashboard"
+      }
     }
   },
   "cli": {

@@ -15,6 +15,22 @@ Item {
     id: window
     focus: true
 
+    function animWin(t, a, b) {
+        if (t <= a) return 0.0;
+        if (t >= b) return 1.0;
+        return (t - a) / (b - a);
+    }
+
+    function easeOut(t) {
+        let c = Math.max(0.0, Math.min(1.0, t));
+        return 1.0 - Math.pow(1.0 - c, 3);
+    }
+
+    function easeBack(t) {
+        let c = Math.max(0.0, Math.min(1.0, t));
+        return 1.0 + 2.7 * Math.pow(c - 1.0, 3) + 1.7 * Math.pow(c - 1.0, 2);
+    }
+
     Timer {
         id: btRebuildDebounce
         interval: 150
@@ -74,16 +90,25 @@ Item {
         else if (t === "eth" && window.ethPresent) window.activeMode = "eth";
     }
 
+    property real introState: 0.0
+    Behavior on introState {
+        enabled: window.visible
+        NumberAnimation { duration: 900; easing.type: Easing.Linear }
+    }
+
+    property int cardIntroDelay: 0
+
     function resetAndPlayIntro() {
         window.powerAnimAllowed = false;
         powerAnimBlocker.restart();
+        window.cardIntroDelay = 0;
         window.introState = 0.0;
         introPlayTimer.restart();
     }
 
     Timer {
         id: introPlayTimer
-        interval: 20
+        interval: 10
         repeat: false
         onTriggered: window.introState = 1.0
     }
@@ -542,6 +567,7 @@ Item {
         }
 
         window.validateActiveMode();
+        window.refreshOrbitDisplay();
 
         if (visible) {
             forceActiveFocus();
@@ -603,6 +629,13 @@ Item {
     Timer { id: powerMinSpinTimer; interval: 800; onTriggered: { if (window.activeMode === "eth") window.rebuildEthData(); else if (window.activeMode === "wifi") window.rebuildWifiData(); else window.rebuildBtData(false); } }
 
     property bool showInfoView: false
+    onShowInfoViewChanged: {
+        window.hoveredCardCount = 0;
+        if (window.showInfoView) {
+            window.updateInfoNodes();
+        }
+        window.refreshOrbitDisplay();
+    }
 
     property string pendingWifiSsid: ""
     property string pendingWifiId: ""
@@ -744,6 +777,7 @@ Item {
     }
 
     onActiveModeChanged: {
+        window.cardIntroDelay = 0;
         if (!window.ignoreNextModeFileUpdate) {
             Quickshell.execDetached(["bash", "-c", "mkdir -p '" + window.cacheDir + "' && echo '" + window.activeMode + "' > '" + window.modeFilePath + "'"]);
         }
@@ -779,11 +813,22 @@ Item {
         }
 
         if (window.showInfoView) window.updateInfoNodes();
+        window.refreshOrbitDisplay();
     }
 
     ListModel { id: wifiListModel }
     ListModel { id: btListModel }
     ListModel { id: infoListModel }
+    ListModel { id: orbitDisplayModel }
+
+    function refreshOrbitDisplay() {
+        let src = (window.currentConn && window.showInfoView) ? infoListModel : (window.activeMode === "wifi" ? wifiListModel : (window.activeMode === "bt" ? btListModel : null));
+        let arr = [];
+        if (src) {
+            for (let i = 0; i < src.count; i++) arr.push(src.get(i));
+        }
+        window.syncModel(orbitDisplayModel, arr);
+    }
 
     function syncModel(listModel, dataArray) {
         if (!listModel || !dataArray) return;
@@ -842,6 +887,7 @@ Item {
             if (nextWifiList !== null) { window.syncModel(wifiListModel, nextWifiList); window.wifiList = nextWifiList; nextWifiList = null; }
             if (nextBtList !== null) { window.syncModel(btListModel, nextBtList); window.btList = nextBtList; nextBtList = null; }
             if (nextInfoList !== null) { window.syncModel(infoListModel, nextInfoList); nextInfoList = null; }
+            window.refreshOrbitDisplay();
         }
     }
 
@@ -897,6 +943,14 @@ Item {
     readonly property bool currentConn: activeMode === "eth" ? window.isEthConn : (activeMode === "wifi" ? window.isWifiConn : window.isBtConn)
 
     readonly property var currentObjList: activeMode === "eth" ? (window.isEthConn ? [window.ethConnected] : []) : (activeMode === "wifi" ? (window.isWifiConn ? [window.wifiConnected] : []) : window.btConnected)
+
+    readonly property string orbitSourceKey: (window.currentConn && window.showInfoView)
+        ? ("info_" + window.activeMode)
+        : (window.activeMode === "wifi" ? "wifi" : (window.activeMode === "bt" ? "bt" : (window.activeMode === "eth" ? "eth" : "none")))
+    onOrbitSourceKeyChanged: {
+        window.hoveredCardCount = 0;
+        window.refreshOrbitDisplay();
+    }
 
     readonly property bool isLogicMultiState: window.activeMode === "bt" && window.activeCoreCount > 1
 
@@ -954,7 +1008,7 @@ Item {
         }
 
         if (window.isListLocked && window.activeMode !== "eth") window.nextInfoList = nodes;
-        else { window.syncModel(infoListModel, nodes); window.nextInfoList = null; }
+        else { window.syncModel(infoListModel, nodes); window.nextInfoList = null; window.refreshOrbitDisplay(); }
     }
 
     function rebuildEthData() {
@@ -1107,7 +1161,7 @@ Item {
 
         if (!window.deepEqual(window.wifiList, newNetworks)) {
             if (window.isListLocked) window.nextWifiList = newNetworks;
-            else { window.syncModel(wifiListModel, newNetworks); window.wifiList = newNetworks; window.nextWifiList = null; }
+            else { window.syncModel(wifiListModel, newNetworks); window.wifiList = newNetworks; window.nextWifiList = null; window.refreshOrbitDisplay(); }
         }
 
         if (window.activeMode === "wifi") {
@@ -1247,7 +1301,7 @@ Item {
 
         if (!window.deepEqual(window.btList, newDevices)) {
             if (window.isListLocked) window.nextBtList = newDevices;
-            else { window.syncModel(btListModel, newDevices); window.btList = newDevices; window.nextBtList = null; }
+            else { window.syncModel(btListModel, newDevices); window.btList = newDevices; window.nextBtList = null; window.refreshOrbitDisplay(); }
         }
 
         if (window.activeMode === "bt") {
@@ -1335,8 +1389,7 @@ Item {
         from: 0; to: Math.PI * 2; duration: 400000; loops: Animation.Infinite; running: window.visible
     }
 
-    property real introState: 0.0
-    Behavior on introState { enabled: window.visible; NumberAnimation { duration: 1500; easing.type: Easing.OutCubic } }
+    property real lightningStrikeProg: window.animWin(window.introState, 0.40, 0.85)
 
     component LoadingDots : Row {
         spacing: window.s(4)
@@ -1361,6 +1414,9 @@ Item {
         anchors.fill: parent
         visible: window.visible
         enabled: window.visible
+        opacity: window.easeOut(window.animWin(window.introState, 0.0, 0.12))
+        scale: 0.96 + 0.04 * window.easeOut(window.animWin(window.introState, 0.0, 0.12))
+        transformOrigin: Item.Center
 
         Rectangle {
             anchors.fill: parent
@@ -1369,6 +1425,13 @@ Item {
             border.color: ThemeBackend.surface0
             border.width: 1
             clip: true
+            layer.enabled: window.visible && window.introState > 0.001 && window.introState < 0.999
+            layer.smooth: true
+            layer.effect: MultiEffect {
+                blurEnabled: true
+                blurMax: 12
+                blur: (1.0 - window.easeOut(window.animWin(window.introState, 0.0, 0.40))) * 0.35
+            }
 
             AmbientBackdrop {
                 anchors.fill: parent
@@ -1386,12 +1449,12 @@ Item {
                 width: parent.width * 0.8; height: width; radius: width / 2
                 x: (parent.width / 2 - width / 2) + Math.cos(window.globalOrbitAngle * 2) * window.s(120)
                 y: (parent.height / 2 - height / 2) + Math.sin(window.globalOrbitAngle * 2) * window.s(80)
-                opacity: window.currentPower ? (window.isDisconnectHovered ? 0.05 : 0.03) : 0.01
+                opacity: (window.currentPower ? (window.isDisconnectHovered ? 0.05 : 0.03) : 0.01) * window.easeOut(window.animWin(window.introState, 0.02, 0.22))
                 color: window.isDisconnectHovered && window.currentConn
                     ? ThemeBackend.red
                     : (window.currentConn ? window.activeColor : ThemeBackend.surface2)
                 Behavior on color { enabled: window.visible; ColorAnimation { duration: 300; easing.type: Easing.OutQuad } }
-                Behavior on opacity { enabled: window.visible; NumberAnimation { duration: 300; easing.type: Easing.OutQuad } }
+                Behavior on opacity { enabled: window.visible && window.introState >= 1.0; NumberAnimation { duration: 300; easing.type: Easing.OutQuad } }
                 visible: opacity > 0.005
             }
 
@@ -1399,13 +1462,28 @@ Item {
                 width: parent.width * 0.9; height: width; radius: width / 2
                 x: (parent.width / 2 - width / 2) + Math.sin(window.globalOrbitAngle * 1.5) * window.s(-120)
                 y: (parent.height / 2 - height / 2) + Math.cos(window.globalOrbitAngle * 1.5) * window.s(-80)
-                opacity: window.currentPower ? (window.isDisconnectHovered ? 0.04 : 0.02) : 0.005
+                opacity: (window.currentPower ? (window.isDisconnectHovered ? 0.04 : 0.02) : 0.005) * window.easeOut(window.animWin(window.introState, 0.04, 0.26))
                 color: window.isDisconnectHovered && window.currentConn
                     ? Qt.darker(ThemeBackend.red, 1.25)
                     : (window.currentConn ? window.activeGradientSecondary : ThemeBackend.surface1)
                 Behavior on color { enabled: window.visible; ColorAnimation { duration: 300; easing.type: Easing.OutQuad } }
-                Behavior on opacity { enabled: window.visible; NumberAnimation { duration: 300; easing.type: Easing.OutQuad } }
+                Behavior on opacity { enabled: window.visible && window.introState >= 1.0; NumberAnimation { duration: 300; easing.type: Easing.OutQuad } }
                 visible: opacity > 0.002
+            }
+
+            Rectangle {
+                id: introPing
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: -window.s(65) / 2
+                width: window.s(520); height: width; radius: width / 2
+                color: "transparent"
+                border.color: window.activeColor
+                border.width: window.s(2)
+                property real pingProg: window.animWin(window.introState, 0.03, 0.32)
+                opacity: (1 - pingProg) * (window.currentPower ? 0.45 : 0.18)
+                scale: 0.2 + 0.9 * pingProg
+                visible: window.visible && pingProg > 0.001 && pingProg < 0.999 && opacity > 0.01
+                Behavior on border.color { enabled: window.visible; ColorAnimation { duration: 300 } }
             }
 
             Item {
@@ -1433,8 +1511,10 @@ Item {
                         Behavior on border.color { enabled: window.visible; ColorAnimation { duration: 150 } }
                         Behavior on border.width { enabled: window.visible; NumberAnimation { duration: 150 } }
 
-                        opacity: Object.keys(window.disconnectingDevices).length > 0 ? 0.2 : (window.currentConn ? 0.08 - (index * 0.02) : 0.03)
-                        Behavior on opacity { enabled: window.visible; NumberAnimation { duration: 150 } }
+                        property real ringIntro: window.easeOut(window.animWin(window.introState, 0.06 + index * 0.05, 0.22 + index * 0.05))
+                        scale: 0.75 + 0.25 * ringIntro
+                        opacity: (Object.keys(window.disconnectingDevices).length > 0 ? 0.2 : (window.currentConn ? 0.08 - (index * 0.02) : 0.03)) * ringIntro
+                        Behavior on opacity { enabled: window.visible && window.introState >= 1.0; NumberAnimation { duration: 150 } }
                     }
                 }
             }
@@ -1444,9 +1524,9 @@ Item {
                 anchors.fill: parent
                 anchors.bottomMargin: window.s(65)
                 z: 0
-                opacity: (window.currentConn && window.showInfoView && window.currentPower) ? 1.0 : 0.0
+                opacity: (window.currentConn && window.showInfoView && window.currentPower && window.lightningStrikeProg > 0.01) ? 1.0 : 0.0
                 visible: window.visible && opacity > 0.01
-                Behavior on opacity { enabled: window.visible; NumberAnimation { duration: 500 } }
+                Behavior on opacity { enabled: window.visible; NumberAnimation { duration: 400 } }
 
                 property real scaleTrigger: window.s(1)
                 onScaleTriggerChanged: if (window.visible) requestPaint()
@@ -1463,7 +1543,7 @@ Item {
                     var ctx = getContext("2d");
                     var s = window.s;
                     ctx.clearRect(0, 0, width, height);
-                    if (!window.currentConn || !window.showInfoView || !window.currentPower) return;
+                    if (!window.currentConn || !window.showInfoView || !window.currentPower || window.lightningStrikeProg <= 0.001) return;
 
                     var time = Date.now() / 1000;
                     ctx.lineJoin = "round";
@@ -1472,6 +1552,8 @@ Item {
                     var tWave1 = time * 2.5;
                     var tWave2 = time * -1.5;
                     var tWave3 = time * 3.4;
+
+                    var reachFactor = Math.min(1.0, window.lightningStrikeProg * 1.15);
 
                     for (var i = 0; i < orbitRepeater.count; i++) {
                         var item = orbitRepeater.itemAt(i);
@@ -1495,7 +1577,10 @@ Item {
                             var startOffset = coreVisualRadius + s(5);
                             var endOffset = s(26);
 
-                            var drawDist = fullDist - startOffset - endOffset;
+                            var maxDrawDist = fullDist - startOffset - endOffset;
+                            if (maxDrawDist <= 0) return;
+
+                            var drawDist = maxDrawDist * reachFactor;
                             if (drawDist <= 0) return;
 
                             var steps = 22;
@@ -1508,7 +1593,7 @@ Item {
                             var distanceFactor = Math.max(0, 1.0 - (fullDist / 420.0));
                             var dynamicLineWidthCore = s(1.0) + (distanceFactor * s(1.2));
                             var dynamicLineWidthGlow = s(4.5) + (distanceFactor * s(3.0));
-                            var dynamicAlpha = (0.35 + (distanceFactor * 0.65)) * parentFade;
+                            var dynamicAlpha = (0.35 + (distanceFactor * 0.65)) * parentFade * Math.min(1.0, window.lightningStrikeProg * 1.5);
 
                             ctx.beginPath();
                             ctx.moveTo(sX, sY);
@@ -1590,9 +1675,11 @@ Item {
                         property bool isReallyActive: window.currentPower && (hasDevice || (isPrimary && window.activeCoreCount === 0))
 
                         property real activeTransition: isReallyActive ? 1.0 : 0.0
+                        property real coreIntroStart: 0.10 + (window.coreVisualIndices[index] * 0.04)
+                        property real coreIntroProg: window.easeBack(window.animWin(window.introState, coreIntroStart, coreIntroStart + 0.22))
 
                         Behavior on activeTransition {
-                            enabled: window.visible && window.introState >= 1.0;
+                            enabled: window.visible && window.introState >= 0.3;
                             NumberAnimation { duration: 1400; easing.type: Easing.OutExpo }
                         }
 
@@ -1613,8 +1700,8 @@ Item {
                         x: window.activeMode === "eth" ? (orbitContainer.width / 2 - width / 2) : ((orbitContainer.width / 2 - width / 2) + (Math.cos(coreOrbitAngle) * myOrbitRadiusX * multiShift * activeTransition))
                         y: window.activeMode === "eth" ? (orbitContainer.height / 2 - height / 2) : ((orbitContainer.height / 2 - height / 2) + (Math.sin(coreOrbitAngle) * myOrbitRadiusY * multiShift * activeTransition))
 
-                        opacity: activeTransition
-                        scale: centralCore.bumpScale * (0.8 + 0.2 * activeTransition)
+                        opacity: activeTransition * window.easeOut(window.animWin(window.introState, coreIntroStart, coreIntroStart + 0.22))
+                        scale: centralCore.bumpScale * (0.8 + 0.2 * activeTransition) * coreIntroProg
                         visible: opacity > 0.01
 
                         property string myId: myDevice ? (window.activeMode === "wifi" ? (myDevice.ssid || "") : (window.activeMode === "eth" ? (myDevice.id || "") : (myDevice.mac || ""))) : "unknown"
@@ -2087,12 +2174,13 @@ Item {
 
                 Repeater {
                     id: orbitRepeater
-                    model: (window.currentConn && window.showInfoView) ? infoListModel : (window.activeMode === "wifi" ? wifiListModel : (window.activeMode === "bt" ? btListModel : null))
+                    model: orbitDisplayModel
 
                     delegate: Item {
                         id: floatCardDelegateContainer
                         width: window.s(150); height: window.s(52)
 
+                        property bool isCardHovered: false
                         property bool isLoaded: false
                         opacity: (isLoaded && window.currentPower) ? 1.0 : 0.0
                         visible: opacity > 0.01
@@ -2118,7 +2206,7 @@ Item {
                         Timer {
                             id: entranceTimer
                             running: window.visible && window.currentPower && !floatCardDelegateContainer.isLoaded
-                            interval: window.activeMode === "eth" ? (600 + (index * 80)) : (40 + (index * 30))
+                            interval: window.activeMode === "eth" ? (400 + (index * 60)) : (40 + (index * 30))
                             onTriggered: floatCardDelegateContainer.isLoaded = true
                         }
 
@@ -2132,7 +2220,7 @@ Item {
 
                         property int siblingsCount: {
                             let c = 0;
-                            let m = orbitRepeater.model;
+                            let m = orbitDisplayModel;
                             if (m && typeof m.count === "number") {
                                 for (let i = 0; i < m.count; i++) {
                                     let d = m.get(i);
@@ -2143,7 +2231,7 @@ Item {
                         }
                         property int localIndex: {
                             let idx = 0;
-                            let m = orbitRepeater.model;
+                            let m = orbitDisplayModel;
                             if (m && typeof m.count === "number" && typeof index === "number") {
                                 for (let i = 0; i < index && i < m.count; i++) {
                                     let d = m.get(i);
@@ -2155,7 +2243,7 @@ Item {
 
                         property real unifiedRatio: window.activeMode === "wifi" || window.activeMode === "eth" ? 0.0 : window.multiTransitionState
 
-                        property real activeCount: (unifiedRatio > 0.5 && myParentIdx !== -1) ? siblingsCount : orbitRepeater.count
+                        property real activeCount: (unifiedRatio > 0.5 && myParentIdx !== -1) ? siblingsCount : orbitDisplayModel.count
                         property real dynamicScale: activeCount > 10 ? Math.max(0.6, 12.0 / activeCount) : (unifiedRatio > 0.5 ? (window.activeCoreCount > 2 ? 0.7 : 0.8) : 1.0)
 
                         property real safeMultiShift: window.activeMode === "wifi" || window.activeMode === "eth" ? 0.0 : window.multiTransitionState
@@ -2166,7 +2254,7 @@ Item {
 
                         property real parentBaseAngle: pItem ? pItem.animatedBaseAngle : 0
 
-                        property real targetSingleBaseAngle: (index / Math.max(1, orbitRepeater.count)) * Math.PI * 2
+                        property real targetSingleBaseAngle: (index / Math.max(1, orbitDisplayModel.count)) * Math.PI * 2
                         property real singleBaseAngle: targetSingleBaseAngle
                         Behavior on singleBaseAngle { enabled: window.visible; NumberAnimation { duration: 800; easing.type: Easing.OutExpo } }
 
@@ -2227,19 +2315,23 @@ Item {
 
                         scale: (!isLoaded ? 0.0 : (isHoveredOrHighlighted ? dynamicScale * 1.025 : dynamicScale)) * currentPopScale
                         Behavior on scale { enabled: window.visible; NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
-                        z: cardHoverHandler.hovered ? 10 : index
+                        z: floatCardDelegateContainer.isCardHovered ? 10 : index
 
                         HoverHandler {
                             id: cardHoverHandler
                             enabled: window.visible
                             onHoveredChanged: {
-                                if (hovered) window.hoveredCardCount++;
-                                else window.hoveredCardCount = Math.max(0, window.hoveredCardCount - 1);
+                                if (floatCardDelegateContainer.isCardHovered !== hovered) {
+                                    floatCardDelegateContainer.isCardHovered = hovered;
+                                    if (hovered) window.hoveredCardCount++;
+                                    else window.hoveredCardCount = Math.max(0, window.hoveredCardCount - 1);
+                                }
                             }
                         }
 
                         Component.onDestruction: {
-                            if (cardHoverHandler.hovered) {
+                            if (floatCardDelegateContainer.isCardHovered) {
+                                floatCardDelegateContainer.isCardHovered = false;
                                 window.hoveredCardCount = Math.max(0, window.hoveredCardCount - 1);
                             }
                         }
@@ -2286,6 +2378,8 @@ Item {
                             let currentIsInfoNode = typeof isInfoNode !== "undefined" ? isInfoNode : false;
 
                             if (currentCmd === "TOGGLE_VIEW") {
+                                floatCardDelegateContainer.isCardHovered = false;
+                                window.hoveredCardCount = 0;
                                 window.showInfoView = !window.showInfoView;
                             } else if (currentIsInfoNode && currentAction === "IP Address") {
                                 let itemName = myButtonText;
@@ -2551,6 +2645,9 @@ Item {
                 anchors.bottomMargin: window.s(18)
                 implicitWidth: window.s(320)
                 implicitHeight: window.s(42)
+                opacity: window.easeOut(window.animWin(window.introState, 0.25, 0.50))
+                scale: 0.9 + 0.1 * window.easeBack(window.animWin(window.introState, 0.25, 0.50))
+                transform: Translate { y: (1 - window.easeOut(window.animWin(window.introState, 0.25, 0.50))) * window.s(26) }
                 fontPixelSize: window.s(14)
                 cornerRadius: ThemeBackend.borderRadius
                 accentColor: window.activeColor
@@ -2617,6 +2714,10 @@ Item {
             Item {
                 id: powerToggleContainer
                 z: 100
+
+                property real pwrIntroProg: window.easeOut(window.animWin(window.introState, 0.10, 0.35))
+                opacity: pwrIntroProg
+                scale: window.easeBack(window.animWin(window.introState, 0.10, 0.35))
 
                 property real pwrMorph: window.currentPower ? 1.0 : 0.0
                 Behavior on pwrMorph {

@@ -25,7 +25,9 @@ Rectangle {
 
     property real leftPadding: (isSolid && !distinctPills) ? 0 : (barWindow ? barWindow.s(6) : 6)
     property real rightPadding: (isSolid && !distinctPills) ? 0 : (barWindow ? barWindow.s(12) : 12)
-    property real targetWidth: (moduleActive && isFocused) ? (leftPadding + focusIconButton.width + innerLayout.spacing + titleTextMain.implicitWidth + rightPadding) : 0
+    property real maxWidth: barWindow ? barWindow.s(300) : 300
+    property real maxTextWidth: Math.max(0, maxWidth - (leftPadding + focusIconButton.width + innerLayout.spacing + rightPadding))
+    property real targetWidth: (moduleActive && isFocused) ? Math.min(maxWidth, leftPadding + focusIconButton.width + innerLayout.spacing + titleTextMain.width + rightPadding) : 0
 
     x: targetX
     Behavior on x {
@@ -80,63 +82,14 @@ Rectangle {
             }
         }
 
-        Item {
-            id: titleClipRect
-            width: titleTextMain.implicitWidth
-            height: titleTextMain.implicitHeight
-            clip: true
+        Text {
+            id: titleTextMain
+            text: focusWidgetRoot.displayText
+            color: ThemeBackend.text
+            font.pixelSize: barWindow ? barWindow.s(focusWidgetRoot.isCompact ? 11 : 12) : (focusWidgetRoot.isCompact ? 11 : 12)
             anchors.verticalCenter: parent.verticalCenter
-
-            property int marqueeSpacing: barWindow ? barWindow.s(30) : 30
-
-            Item {
-                id: marqueeContainer
-                height: parent.height
-
-                Row {
-                    spacing: titleClipRect.marqueeSpacing
-                    Text {
-                        id: titleTextMain
-                        text: focusWidgetRoot.displayText
-                        color: ThemeBackend.text
-                        font.pixelSize: barWindow ? barWindow.s(focusWidgetRoot.isCompact ? 11 : 12) : (focusWidgetRoot.isCompact ? 11 : 12)
-
-                        onTextChanged: {
-                            titleAnim.stop();
-                            marqueeContainer.x = 0;
-                            if (titleTextMain.implicitWidth > titleClipRect.width) {
-                                titleAnim.start();
-                            }
-                        }
-                    }
-
-                    Text {
-                        id: titleTextClone
-                        text: titleTextMain.text
-                        color: ThemeBackend.text
-                        font.pixelSize: barWindow ? barWindow.s(focusWidgetRoot.isCompact ? 11 : 12) : (focusWidgetRoot.isCompact ? 11 : 12)
-                        visible: titleTextMain.implicitWidth > titleClipRect.width
-                    }
-                }
-
-                SequentialAnimation {
-                    id: titleAnim
-                    loops: Animation.Infinite
-                    running: titleTextMain.implicitWidth > titleClipRect.width
-
-                    PauseAnimation { duration: 3000 }
-
-                    NumberAnimation {
-                        target: marqueeContainer
-                        property: "x"
-                        from: 0
-                        to: -(titleTextMain.implicitWidth + titleClipRect.marqueeSpacing)
-                        duration: Math.max(1, (titleTextMain.implicitWidth + titleClipRect.marqueeSpacing) * 25)
-                    }
-
-                    PropertyAction { target: marqueeContainer; property: "x"; value: 0 }
-                }
-            }
+            elide: Text.ElideRight
+            width: Math.min(implicitWidth, focusWidgetRoot.maxTextWidth)
         }
     }
 

@@ -250,7 +250,7 @@ PanelWindow {
     property real animatedLauncherHeight: targetLauncherHeight
     Behavior on animatedLauncherHeight {
         NumberAnimation {
-            duration: 300
+            duration: 280
             easing.type: Easing.OutCubic
         }
     }
@@ -356,6 +356,7 @@ PanelWindow {
             focusRetryTimer.restart();
             focusFinalTimer.restart();
         } else {
+            appList.resetScroll();
             filterDebounceTimer.stop();
             focusTimer.stop();
             focusRetryTimer.stop();
@@ -519,7 +520,8 @@ PanelWindow {
         if (item.isCommand) return "cmd:" + item.command;
         if (item.isCalc) return "calc:" + item.calcResult;
         if (item.isWidget) return "widget:" + (item.widgetTarget || item.name);
-        return item.desktop_id ? ("desktop:" + item.desktop_id) : ("name:" + item.name);
+        if (item.desktop_id) return "app:" + item.desktop_id;
+        return "name:" + item.name;
     }
 
     function executeFilter(query) {
@@ -640,49 +642,47 @@ PanelWindow {
             });
         }
 
-        let newKeys = {};
+        let targetKeys = {};
         for (let i = 0; i < filtered.length; i++) {
-            newKeys[getItemKey(filtered[i])] = true;
+            targetKeys[getItemKey(filtered[i])] = true;
         }
 
         for (let i = appModel.count - 1; i >= 0; i--) {
             let key = getItemKey(appModel.get(i));
-            if (!newKeys[key]) {
+            if (!targetKeys[key]) {
                 appModel.remove(i);
             }
         }
 
         for (let i = 0; i < filtered.length; i++) {
-            let item = filtered[i];
-            let targetKey = getItemKey(item);
+            let target = filtered[i];
+            let targetKey = getItemKey(target);
 
-            if (i < appModel.count) {
-                let currentKey = getItemKey(appModel.get(i));
-                if (currentKey === targetKey) {
-                    appModel.set(i, item);
-                } else {
-                    let foundIndex = -1;
-                    for (let j = i + 1; j < appModel.count; j++) {
-                        if (getItemKey(appModel.get(j)) === targetKey) {
-                            foundIndex = j;
-                            break;
-                        }
-                    }
-                    if (foundIndex !== -1) {
-                        appModel.move(foundIndex, i, 1);
-                        appModel.set(i, item);
-                    } else {
-                        appModel.insert(i, item);
-                    }
+            let curIndex = -1;
+            for (let j = i; j < appModel.count; j++) {
+                if (getItemKey(appModel.get(j)) === targetKey) {
+                    curIndex = j;
+                    break;
+                }
+            }
+
+            if (curIndex === i) {
+                let cur = appModel.get(i);
+                if (cur.name !== target.name || cur.desktop_id !== target.desktop_id || cur.description !== target.description || cur.icon !== target.icon || cur.fontIcon !== target.fontIcon || cur.command !== target.command || cur.calcResult !== target.calcResult || cur.isCommand !== target.isCommand || cur.isCalc !== target.isCalc || cur.isWidget !== target.isWidget) {
+                    appModel.set(i, target);
+                }
+            } else if (curIndex > i) {
+                appModel.move(curIndex, i, 1);
+                let cur = appModel.get(i);
+                if (cur.name !== target.name || cur.desktop_id !== target.desktop_id || cur.description !== target.description || cur.icon !== target.icon || cur.fontIcon !== target.fontIcon || cur.command !== target.command || cur.calcResult !== target.calcResult || cur.isCommand !== target.isCommand || cur.isCalc !== target.isCalc || cur.isWidget !== target.isWidget) {
+                    appModel.set(i, target);
                 }
             } else {
-                appModel.append(item);
+                appModel.insert(i, target);
             }
         }
 
-        while (appModel.count > filtered.length) {
-            appModel.remove(appModel.count - 1);
-        }
+        appList.resetScroll();
 
         if (appModel.count > 0) {
             appList.currentIndex = 0;
@@ -1218,15 +1218,16 @@ PanelWindow {
                             property: "opacity"
                             from: 0.0
                             to: 1.0
-                            duration: 250
+                            duration: 220
                             easing.type: Easing.OutCubic
                         }
                         NumberAnimation {
                             property: "scale"
-                            from: 0.96
+                            from: 0.94
                             to: 1.0
-                            duration: 270
-                            easing.type: Easing.OutCubic
+                            duration: 250
+                            easing.type: Easing.OutBack
+                            easing.overshoot: 1.1
                         }
                     }
 
@@ -1235,13 +1236,13 @@ PanelWindow {
                         NumberAnimation {
                             property: "opacity"
                             to: 0.0
-                            duration: 170
+                            duration: 150
                             easing.type: Easing.OutCubic
                         }
                         NumberAnimation {
                             property: "scale"
-                            to: 0.96
-                            duration: 170
+                            to: 0.92
+                            duration: 150
                             easing.type: Easing.OutCubic
                         }
                     }
@@ -1249,19 +1250,30 @@ PanelWindow {
                     Transition {
                         id: listDisplacedTrans
                         NumberAnimation {
-                            properties: "y"
-                            duration: 280
+                            property: "y"
+                            duration: 300
+                            easing.type: Easing.OutCubic
+                        }
+                        NumberAnimation {
+                            property: "opacity"
+                            to: 1.0
+                            duration: 200
+                            easing.type: Easing.OutCubic
+                        }
+                        NumberAnimation {
+                            property: "scale"
+                            to: 1.0
+                            duration: 200
                             easing.type: Easing.OutCubic
                         }
                     }
 
-                    Transition {
-                        id: listMoveTrans
-                        NumberAnimation {
-                            properties: "y"
-                            duration: 280
-                            easing.type: Easing.OutCubic
-                        }
+                    NumberAnimation {
+                        id: scrollAnim
+                        target: appList
+                        property: "contentY"
+                        duration: 260
+                        easing.type: Easing.OutCubic
                     }
 
                     ListView {
@@ -1272,18 +1284,71 @@ PanelWindow {
                         spacing: launcherWindow.s(4)
                         currentIndex: 0
                         boundsBehavior: Flickable.StopAtBounds
+                        cacheBuffer: launcherWindow.s(500)
 
                         highlightFollowsCurrentItem: false
 
-                        add: listAddTrans
-                        remove: listRemoveTrans
-                        displaced: listDisplacedTrans
-                        move: listMoveTrans
-                        moveDisplaced: listDisplacedTrans
+                        property bool transitionsEnabled: launcherWindow.isVisible && container.animProgress > 0.7
+
+                        add: transitionsEnabled ? listAddTrans : null
+                        remove: transitionsEnabled ? listRemoveTrans : null
+                        move: transitionsEnabled ? listDisplacedTrans : null
+                        displaced: transitionsEnabled ? listDisplacedTrans : null
+
+                        function getItemY(idx) {
+                            return idx * (launcherWindow.s(44) + spacing);
+                        }
+
+                        function resetScroll() {
+                            scrollAnim.stop();
+                            if (contentY > 0) {
+                                positionViewAtBeginning();
+                                contentY = 0;
+                            }
+                        }
+
+                        onContentYChanged: {
+                            if (contentY < 0 && !moving && !flicking) {
+                                contentY = 0;
+                            }
+                        }
+
+                        function ensureVisible(idx, animated) {
+                            if (idx < 0 || appModel.count === 0) return;
+                            let itemH = launcherWindow.s(44);
+                            let step = itemH + spacing;
+                            let itemTop = idx * step;
+                            let itemBottom = itemTop + itemH;
+
+                            let curContentY = scrollAnim.running ? scrollAnim.to : contentY;
+                            let totalH = appModel.count * step - spacing;
+                            let maxScroll = Math.max(0, Math.max(totalH, contentHeight) - height);
+                            let newContentY = curContentY;
+
+                            if (itemTop < curContentY) {
+                                newContentY = itemTop;
+                            } else if (itemBottom > curContentY + height) {
+                                newContentY = itemBottom - height;
+                            }
+
+                            newContentY = Math.max(0, Math.min(maxScroll, newContentY));
+
+                            if (Math.abs(newContentY - contentY) > 0.5) {
+                                if (animated && transitionsEnabled) {
+                                    scrollAnim.stop();
+                                    scrollAnim.from = contentY;
+                                    scrollAnim.to = newContentY;
+                                    scrollAnim.start();
+                                } else {
+                                    scrollAnim.stop();
+                                    contentY = newContentY;
+                                }
+                            }
+                        }
 
                         onCurrentIndexChanged: {
                             if (currentIndex >= 0) {
-                                positionViewAtIndex(currentIndex, ListView.Contain);
+                                ensureVisible(currentIndex, launcherWindow.isKeyboardNav);
                             }
                         }
 
@@ -1305,7 +1370,7 @@ PanelWindow {
                             radius: ThemeBackend.borderRadius
                             color: ThemeBackend.mauve
 
-                            property real targetY: (appList.currentIndex >= 0 && appList.currentItem) ? appList.currentItem.y : 0
+                            property real targetY: (appList.currentIndex >= 0) ? appList.getItemY(appList.currentIndex) : 0
                             y: targetY
 
                             Behavior on y {

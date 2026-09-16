@@ -94,7 +94,7 @@ function getLayout(name, mx, my, mw, mh, userScale, barPosition) {
             } 
         },
         "guide": { 
-            w: 1200, h: 750, comp: "guide/GuidePopup.qml", 
+            w: 1200, h: 750, comp: "guide/GuidePopup.qml", draggable: true,
             pos: { 
                 "top": { anchor: "center" }, 
                 "bottom": { anchor: "center" }, 
@@ -223,7 +223,7 @@ function getLayout(name, mx, my, mw, mh, userScale, barPosition) {
             break;
     }
 
-    return { w: finalW, h: finalH, rx: mx + rx, ry: my + ry, comp: t.comp };
+    return { w: finalW, h: finalH, rx: mx + rx, ry: my + ry, comp: t.comp, draggable: Boolean(t.draggable) };
 }
 
 function getPopupLayout(mw, mh, userScale) {

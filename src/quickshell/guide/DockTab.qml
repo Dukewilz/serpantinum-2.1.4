@@ -22,6 +22,7 @@ Item {
     property var defaultDockSettings: ({
         "enabled": true,
         "position": "bottom",
+        "onTop": true,
         "elementSize": 44,
         "floating": false,
         "opacity": 100,
@@ -48,6 +49,7 @@ Item {
 
     property bool currentEnabled: dockSettings && dockSettings.enabled !== undefined ? dockSettings.enabled : true
     property string currentPosition: dockSettings && dockSettings.position !== undefined ? dockSettings.position : "bottom"
+    property bool currentOnTop: dockSettings && dockSettings.onTop !== undefined ? Boolean(dockSettings.onTop) : true
     property bool currentFloating: dockSettings && dockSettings.floating !== undefined ? dockSettings.floating : false
     property bool currentExclusive: dockSettings && (dockSettings.exclusive !== undefined ? dockSettings.exclusive : (dockSettings.exclusiveMode !== undefined ? dockSettings.exclusiveMode : false)) ? true : false
     property real currentOpacity: {
@@ -73,6 +75,7 @@ Item {
         dockTabRoot.dockSettings = s;
         dockTabRoot.currentEnabled = s.enabled !== undefined ? s.enabled : true;
         dockTabRoot.currentPosition = s.position !== undefined ? s.position : "bottom";
+        dockTabRoot.currentOnTop = s.onTop !== undefined ? Boolean(s.onTop) : true;
         dockTabRoot.currentFloating = s.floating !== undefined ? s.floating : false;
         dockTabRoot.currentExclusive = s.exclusive !== undefined ? s.exclusive : (s.exclusiveMode !== undefined ? Boolean(s.exclusiveMode) : false);
         dockTabRoot.currentOpacity = s.opacity !== undefined ? Number(s.opacity) : (s.transparency !== undefined ? Math.max(0, 100 - Number(s.transparency)) : 100);
@@ -237,15 +240,207 @@ Item {
             }
 
             Rectangle {
+                id: dockAppsCard
                 Layout.fillWidth: true
-                implicitHeight: rowPosLayout.implicitHeight + rootObj.s(24)
+                clip: true
+                radius: ThemeBackend.borderRadius
+                color: Qt.alpha(ThemeBackend.surface0, 0.4)
+                border.color: Qt.alpha(ThemeBackend.surface1, 0.4)
+                border.width: 1
+                visible: dockTabRoot.currentEnabled
+
+                implicitHeight: cardLayout.implicitHeight + rootObj.s(24)
+
+                ColumnLayout {
+                    id: cardLayout
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: rootObj.s(12)
+                    spacing: rootObj.s(12)
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: rootObj.s(10)
+
+                        Text {
+                            text: I18n.t("guide.dock.apps.title", "Dock Applications")
+                            font.family: ThemeBackend.fontFamily
+                            font.pixelSize: rootObj.s(13)
+                            color: ThemeBackend.text
+                        }
+
+                        Text {
+                            text: "(" + dockTabRoot.currentAppsList.length + " " + (dockTabRoot.currentAppsList.length === 1 ? I18n.t("guide.dock.apps.singular", "app") : I18n.t("guide.dock.apps.plural", "apps")) + ")"
+                            font.family: ThemeBackend.fontFamily
+                            font.pixelSize: rootObj.s(11)
+                            color: ThemeBackend.subtext0
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        ClickButton {
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            maxWidth: rootObj.s(160)
+                            implicitHeight: rootObj.s(32)
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonText: dockTabRoot.currentEditing ? I18n.t("guide.dock.apps.exit_edit", "Exit edit mode") : I18n.t("guide.dock.apps.enter_edit", "Edit")
+                            buttonIcon: dockTabRoot.currentEditing ? "󰅖" : "󰏫"
+                            iconFontSize: rootObj.s(14)
+                            accentColor: dockTabRoot.currentEditing ? ThemeBackend.red : ThemeBackend.mauve
+                            textColor: ThemeBackend.crust
+                            onClicked: {
+                                dockTabRoot.currentEditing = !dockTabRoot.currentEditing;
+                                dockTabRoot.updateDockSetting("editing", dockTabRoot.currentEditing);
+                                if (typeof Sounds !== "undefined") {
+                                    Sounds.playSfx(dockTabRoot.currentEditing ? "guide/barconfig/out.wav" : "guide/barconfig/in.wav");
+                                }
+                                Quickshell.execDetached(["bash", Caching.serpantinumDir + "/scripts/qs_manager.sh", "close"]);
+                            }
+                        }
+                    }
+
+                    GridLayout {
+                        id: appsGrid
+                        Layout.fillWidth: true
+                        columns: 3
+                        rowSpacing: rootObj.s(8)
+                        columnSpacing: rootObj.s(8)
+                        visible: dockTabRoot.currentAppsList.length > 0
+
+                        property real colWidth: Math.max(0, (cardLayout.width - appsGrid.columnSpacing * 2) / 3)
+
+                        Repeater {
+                            model: dockTabRoot.currentAppsList
+                            delegate: Rectangle {
+                                id: appItemCard
+                                required property var modelData
+                                required property int index
+
+                                Layout.preferredWidth: appsGrid.colWidth
+                                Layout.maximumWidth: appsGrid.colWidth
+                                Layout.fillWidth: false
+                                Layout.preferredHeight: rootObj.s(48)
+                                radius: ThemeBackend.borderRadius
+                                color: Qt.alpha(ThemeBackend.surface1, 0.3)
+                                border.color: Qt.alpha(ThemeBackend.surface2, 0.35)
+                                border.width: 1
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: rootObj.s(8)
+                                    anchors.rightMargin: rootObj.s(8)
+                                    spacing: rootObj.s(8)
+
+                                    Rectangle {
+                                        id: iconWrapper
+                                        implicitWidth: rootObj.s(32)
+                                        implicitHeight: rootObj.s(32)
+                                        Layout.alignment: Qt.AlignVCenter
+                                        radius: Math.round(rootObj.s(32) * 0.28)
+                                        color: ThemeBackend.surface0
+                                        clip: true
+
+                                        Image {
+                                            id: appCardIcon
+                                            anchors.fill: parent
+                                            anchors.margins: rootObj.s(4)
+                                            fillMode: Image.PreserveAspectFit
+                                            asynchronous: true
+                                            smooth: true
+                                            mipmap: true
+                                            property bool failedLoad: false
+
+                                            visible: source !== "" && status === Image.Ready && !failedLoad
+
+                                            source: {
+                                                let ic = modelData.icon || "";
+                                                if (!ic) return "";
+                                                if (ic.startsWith("file://") || ic.startsWith("image://") || ic.startsWith("http://") || ic.startsWith("https://")) return ic;
+                                                return ic.startsWith("/") ? "file://" + ic : "image://icon/" + ic;
+                                            }
+
+                                            onStatusChanged: {
+                                                if (status === Image.Error) failedLoad = true;
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            visible: !appCardIcon.visible
+                                            text: modelData.name ? modelData.name.charAt(0).toUpperCase() : "?"
+                                            font.family: ThemeBackend.fontFamily
+                                            font.pixelSize: rootObj.s(13)
+                                            font.bold: true
+                                            color: ThemeBackend.text
+                                        }
+                                    }
+
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        Layout.alignment: Qt.AlignVCenter
+                                        spacing: rootObj.s(1)
+
+                                        Text {
+                                            text: modelData.name || modelData.desktop_id || "App"
+                                            font.family: ThemeBackend.fontFamily
+                                            font.pixelSize: rootObj.s(12)
+                                            font.bold: true
+                                            color: ThemeBackend.text
+                                            elide: Text.ElideRight
+                                            Layout.fillWidth: true
+                                        }
+
+                                        Text {
+                                            text: modelData.comment || modelData.desktop_id || ""
+                                            font.family: ThemeBackend.fontFamily
+                                            font.pixelSize: rootObj.s(10)
+                                            color: ThemeBackend.subtext0
+                                            elide: Text.ElideRight
+                                            Layout.fillWidth: true
+                                        }
+                                    }
+
+                                    DeleteButton {
+                                        size: rootObj.s(28)
+                                        cornerRadius: Math.min(ThemeBackend.borderRadius, rootObj.s(8))
+                                        iconFontSize: rootObj.s(14)
+                                        Layout.alignment: Qt.AlignVCenter
+                                        onClicked: {
+                                            dockTabRoot.removeApp(index);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: rootObj.s(40)
+                        visible: dockTabRoot.currentAppsList.length === 0
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: I18n.t("guide.dock.apps.empty", "No applications configured for the dock")
+                            font.family: ThemeBackend.fontFamily
+                            font.pixelSize: rootObj.s(12)
+                            color: ThemeBackend.subtext0
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: posCol.implicitHeight + rootObj.s(24)
                 radius: ThemeBackend.borderRadius
                 color: Qt.alpha(ThemeBackend.surface0, 0.4)
                 border.width: 0
                 visible: dockTabRoot.currentEnabled
 
-                RowLayout {
-                    id: rowPosLayout
+                ColumnLayout {
+                    id: posCol
                     anchors.left: parent.left
                     anchors.leftMargin: rootObj.s(14)
                     anchors.right: parent.right
@@ -253,73 +448,141 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: rootObj.s(12)
 
-                    IconButton {
-                        enabled: false
-                        size: rootObj.s(32)
-                        Layout.preferredWidth: rootObj.s(32)
-                        Layout.preferredHeight: rootObj.s(32)
-                        Layout.alignment: Qt.AlignVCenter
-                        cornerRadius: ThemeBackend.borderRadius
-                        buttonIcon: "󰍹"
-                        iconOffsetX: -2
-                        iconFontSize: rootObj.s(16)
-                        accentColor: ThemeBackend.surface0
-                        textColor: "#ffffff"
-                    }
-
-                    ColumnLayout {
+                    RowLayout {
+                        id: rowPosLayout
                         Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
-                        spacing: rootObj.s(2)
+                        Layout.preferredWidth: posCol.width
+                        spacing: rootObj.s(12)
 
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.dock.position.title", "Dock position")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(13)
-                            color: ThemeBackend.text
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰍹"
+                            iconOffsetX: -2
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
                         }
-                        Text {
+
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            text: I18n.t("guide.dock.position.desc", "Select the screen edge to anchor the dock")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(11)
-                            color: ThemeBackend.subtext0
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: rootObj.s(2)
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: I18n.t("guide.dock.position.title", "Dock position")
+                                font.family: ThemeBackend.fontFamily
+                                font.pixelSize: rootObj.s(13)
+                                color: ThemeBackend.text
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: I18n.t("guide.dock.position.desc", "Select the screen edge to anchor the dock")
+                                font.family: ThemeBackend.fontFamily
+                                font.pixelSize: rootObj.s(11)
+                                color: ThemeBackend.subtext0
+                            }
+                        }
+
+                        Dropdown {
+                            id: posDropdown
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            implicitWidth: rootObj.s(180)
+                            implicitHeight: rootObj.s(32)
+                            options: [
+                                I18n.t("guide.dock.position.bottom", "Bottom"),
+                                I18n.t("guide.dock.position.top", "Top"),
+                                I18n.t("guide.dock.position.left", "Left"),
+                                I18n.t("guide.dock.position.right", "Right")
+                            ]
+                            currentIndex: {
+                                if (dockTabRoot.currentPosition === "top") return 1;
+                                if (dockTabRoot.currentPosition === "left") return 2;
+                                if (dockTabRoot.currentPosition === "right") return 3;
+                                return 0;
+                            }
+                            accentColor: ThemeBackend.mauve
+                            baseColor: ThemeBackend.surface0
+                            hoverColor: ThemeBackend.surface1
+                            dropdownColor: ThemeBackend.surface0
+                            borderColor: Qt.alpha(ThemeBackend.surface2, 0.6)
+                            textColor: ThemeBackend.text
+                            activeTextColor: ThemeBackend.crust
+                            fontPixelSize: rootObj.s(11)
+                            onValueChanged: function(index, value) {
+                                let pos = "bottom";
+                                if (index === 1) pos = "top";
+                                else if (index === 2) pos = "left";
+                                else if (index === 3) pos = "right";
+                                dockTabRoot.currentPosition = pos;
+                                dockTabRoot.updateDockSetting("position", pos);
+                            }
                         }
                     }
 
-                    Dropdown {
-                        id: posDropdown
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        implicitWidth: rootObj.s(180)
-                        implicitHeight: rootObj.s(32)
-                        options: [
-                            I18n.t("guide.dock.position.bottom", "Bottom"),
-                            I18n.t("guide.dock.position.top", "Top"),
-                            I18n.t("guide.dock.position.left", "Left"),
-                            I18n.t("guide.dock.position.right", "Right")
-                        ]
-                        currentIndex: {
-                            if (dockTabRoot.currentPosition === "top") return 1;
-                            if (dockTabRoot.currentPosition === "left") return 2;
-                            if (dockTabRoot.currentPosition === "right") return 3;
-                            return 0;
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: posCol.width
+                        height: 1
+                        color: Qt.alpha(ThemeBackend.surface1, 0.3)
+                    }
+
+                    RowLayout {
+                        id: rowOnTopLayout
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: posCol.width
+                        spacing: rootObj.s(12)
+
+                        IconButton {
+                            enabled: false
+                            size: rootObj.s(32)
+                            Layout.preferredWidth: rootObj.s(32)
+                            Layout.preferredHeight: rootObj.s(32)
+                            Layout.alignment: Qt.AlignVCenter
+                            cornerRadius: ThemeBackend.borderRadius
+                            buttonIcon: "󰹤"
+                            iconFontSize: rootObj.s(16)
+                            accentColor: ThemeBackend.surface0
+                            textColor: "#ffffff"
                         }
-                        accentColor: ThemeBackend.mauve
-                        baseColor: ThemeBackend.surface0
-                        hoverColor: ThemeBackend.surface1
-                        dropdownColor: ThemeBackend.surface0
-                        borderColor: Qt.alpha(ThemeBackend.surface2, 0.6)
-                        textColor: ThemeBackend.text
-                        activeTextColor: ThemeBackend.crust
-                        fontPixelSize: rootObj.s(11)
-                        onValueChanged: function(index, value) {
-                            let pos = "bottom";
-                            if (index === 1) pos = "top";
-                            else if (index === 2) pos = "left";
-                            else if (index === 3) pos = "right";
-                            dockTabRoot.currentPosition = pos;
-                            dockTabRoot.updateDockSetting("position", pos);
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: rootObj.s(2)
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: I18n.t("guide.dock.on_top.title", "Place dock on top of windows")
+                                font.family: ThemeBackend.fontFamily
+                                font.pixelSize: rootObj.s(13)
+                                color: ThemeBackend.text
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: I18n.t("guide.dock.on_top.desc", "Keep the dock visible above application windows")
+                                font.family: ThemeBackend.fontFamily
+                                font.pixelSize: rootObj.s(11)
+                                color: ThemeBackend.subtext0
+                            }
+                        }
+
+                        Toggle {
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            checked: dockTabRoot.currentOnTop
+                            accentColor: ThemeBackend.mauve
+                            baseColor: ThemeBackend.surface1
+                            handleColor: ThemeBackend.crust
+                            handleOffColor: ThemeBackend.text
+                            onToggled: function(val) {
+                                dockTabRoot.currentOnTop = val;
+                                dockTabRoot.updateDockSetting("onTop", val);
+                            }
                         }
                     }
                 }
@@ -1185,198 +1448,6 @@ Item {
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-            }
-
-            Rectangle {
-                id: dockAppsCard
-                Layout.fillWidth: true
-                clip: true
-                radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.color: Qt.alpha(ThemeBackend.surface1, 0.4)
-                border.width: 1
-                visible: dockTabRoot.currentEnabled
-
-                implicitHeight: cardLayout.implicitHeight + rootObj.s(24)
-
-                ColumnLayout {
-                    id: cardLayout
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: rootObj.s(12)
-                    spacing: rootObj.s(12)
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: rootObj.s(10)
-
-                        Text {
-                            text: I18n.t("guide.dock.apps.title", "Dock Applications")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(13)
-                            color: ThemeBackend.text
-                        }
-
-                        Text {
-                            text: "(" + dockTabRoot.currentAppsList.length + " " + (dockTabRoot.currentAppsList.length === 1 ? I18n.t("guide.dock.apps.singular", "app") : I18n.t("guide.dock.apps.plural", "apps")) + ")"
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(11)
-                            color: ThemeBackend.subtext0
-                        }
-
-                        Item { Layout.fillWidth: true }
-
-                        ClickButton {
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            maxWidth: rootObj.s(160)
-                            implicitHeight: rootObj.s(32)
-                            cornerRadius: ThemeBackend.borderRadius
-                            buttonText: dockTabRoot.currentEditing ? I18n.t("guide.dock.apps.exit_edit", "Exit edit mode") : I18n.t("guide.dock.apps.enter_edit", "Edit")
-                            buttonIcon: dockTabRoot.currentEditing ? "󰅖" : "󰏫"
-                            iconFontSize: rootObj.s(14)
-                            accentColor: dockTabRoot.currentEditing ? ThemeBackend.red : ThemeBackend.mauve
-                            textColor: ThemeBackend.crust
-                            onClicked: {
-                                dockTabRoot.currentEditing = !dockTabRoot.currentEditing;
-                                dockTabRoot.updateDockSetting("editing", dockTabRoot.currentEditing);
-                                if (typeof Sounds !== "undefined") {
-                                    Sounds.playSfx(dockTabRoot.currentEditing ? "guide/barconfig/out.wav" : "guide/barconfig/in.wav");
-                                }
-                                Quickshell.execDetached(["bash", Caching.serpantinumDir + "/scripts/qs_manager.sh", "close"]);
-                            }
-                        }
-                    }
-
-                    GridLayout {
-                        id: appsGrid
-                        Layout.fillWidth: true
-                        columns: 3
-                        rowSpacing: rootObj.s(8)
-                        columnSpacing: rootObj.s(8)
-                        visible: dockTabRoot.currentAppsList.length > 0
-
-                        property real colWidth: Math.max(0, (cardLayout.width - appsGrid.columnSpacing * 2) / 3)
-
-                        Repeater {
-                            model: dockTabRoot.currentAppsList
-                            delegate: Rectangle {
-                                id: appItemCard
-                                required property var modelData
-                                required property int index
-
-                                Layout.preferredWidth: appsGrid.colWidth
-                                Layout.maximumWidth: appsGrid.colWidth
-                                Layout.fillWidth: false
-                                Layout.preferredHeight: rootObj.s(48)
-                                radius: ThemeBackend.borderRadius
-                                color: Qt.alpha(ThemeBackend.surface1, 0.3)
-                                border.color: Qt.alpha(ThemeBackend.surface2, 0.35)
-                                border.width: 1
-
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: rootObj.s(8)
-                                    anchors.rightMargin: rootObj.s(8)
-                                    spacing: rootObj.s(8)
-
-                                    Rectangle {
-                                        id: iconWrapper
-                                        implicitWidth: rootObj.s(32)
-                                        implicitHeight: rootObj.s(32)
-                                        Layout.alignment: Qt.AlignVCenter
-                                        radius: Math.round(rootObj.s(32) * 0.28)
-                                        color: ThemeBackend.surface0
-                                        clip: true
-
-                                        Image {
-                                            id: appCardIcon
-                                            anchors.fill: parent
-                                            anchors.margins: rootObj.s(4)
-                                            fillMode: Image.PreserveAspectFit
-                                            asynchronous: true
-                                            smooth: true
-                                            mipmap: true
-                                            property bool failedLoad: false
-
-                                            visible: source !== "" && status === Image.Ready && !failedLoad
-
-                                            source: {
-                                                let ic = modelData.icon || "";
-                                                if (!ic) return "";
-                                                if (ic.startsWith("file://") || ic.startsWith("image://") || ic.startsWith("http://") || ic.startsWith("https://")) return ic;
-                                                return ic.startsWith("/") ? "file://" + ic : "image://icon/" + ic;
-                                            }
-
-                                            onStatusChanged: {
-                                                if (status === Image.Error) failedLoad = true;
-                                            }
-                                        }
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            visible: !appCardIcon.visible
-                                            text: modelData.name ? modelData.name.charAt(0).toUpperCase() : "?"
-                                            font.family: ThemeBackend.fontFamily
-                                            font.pixelSize: rootObj.s(13)
-                                            font.bold: true
-                                            color: ThemeBackend.text
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.alignment: Qt.AlignVCenter
-                                        spacing: rootObj.s(1)
-
-                                        Text {
-                                            text: modelData.name || modelData.desktop_id || "App"
-                                            font.family: ThemeBackend.fontFamily
-                                            font.pixelSize: rootObj.s(12)
-                                            font.bold: true
-                                            color: ThemeBackend.text
-                                            elide: Text.ElideRight
-                                            Layout.fillWidth: true
-                                        }
-
-                                        Text {
-                                            text: modelData.comment || modelData.desktop_id || ""
-                                            font.family: ThemeBackend.fontFamily
-                                            font.pixelSize: rootObj.s(10)
-                                            color: ThemeBackend.subtext0
-                                            elide: Text.ElideRight
-                                            Layout.fillWidth: true
-                                        }
-                                    }
-
-                                    DeleteButton {
-                                        size: rootObj.s(28)
-                                        cornerRadius: Math.min(ThemeBackend.borderRadius, rootObj.s(8))
-                                        iconFontSize: rootObj.s(14)
-                                        Layout.alignment: Qt.AlignVCenter
-                                        onClicked: {
-                                            dockTabRoot.removeApp(index);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: rootObj.s(40)
-                        visible: dockTabRoot.currentAppsList.length === 0
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: I18n.t("guide.dock.apps.empty", "No applications configured for the dock")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(12)
-                            color: ThemeBackend.subtext0
                         }
                     }
                 }

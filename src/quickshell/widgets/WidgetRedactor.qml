@@ -125,6 +125,23 @@ PanelWindow {
         property real safeWidth: redactorMode.width
         property real safeHeight: redactorMode.height
 
+        Connections {
+            target: WidgetSync
+            function onPositionChanged(monitor, widgetId, x, y) {
+                if (monitor !== redactorWindow.safeMonitorName) return;
+                let target = String(widgetId).trim();
+                for (let i = 0; i < activeWidgetsModel.count; i++) {
+                    let item = activeWidgetsModel.get(i);
+                    if (String(item.wId).trim() === target) {
+                        activeWidgetsModel.setProperty(i, "wX", x);
+                        activeWidgetsModel.setProperty(i, "wY", y);
+                        redactorMode.queueUpdateToolbarObscured();
+                        break;
+                    }
+                }
+            }
+        }
+
         Timer {
             id: toolbarCheckTimer
             interval: 100

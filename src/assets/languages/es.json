@@ -98,7 +98,9 @@
       "empty_graphic": {
         "title": "Animación de centro vacío",
         "desc": "Mostrar el gráfico del gato durmiendo en el centro de notificaciones cuando esté vacío"
-      }
+      },
+      "test": "Probar notificación",
+      "test_desc": "Esta es una notificación de prueba"
     },
     "idle": {
       "enabled": {
@@ -258,7 +260,16 @@
         "hide_bar": {
           "title": "Ocultar barra en el redactor",
           "desc": "Ocultar automáticamente la barra al editar widgets en el modo redactor"
-        }
+        },
+        "hide_presets": "Ocultar preajustes",
+        "choose_preset": "Elegir un preajuste",
+        "presets": {
+          "title": "Preajustes de widgets"
+        },
+        "save_preset": {
+          "title": "Guardar ajuste preestablecido"
+        },
+        "preset_name_placeholder": "Introduce el nombre del ajuste..."
       }
     },
     "bar": {
@@ -634,6 +645,10 @@
       "exclusive": {
         "title": "Modo exclusivo",
         "desc": "Evitar que las ventanas ocupen el espacio del dock"
+      },
+      "on_top": {
+        "title": "Colocar dock sobre las ventanas",
+        "desc": "Mantener el dock visible encima de las ventanas de aplicaciones"
       }
     }
   },
@@ -1007,7 +1022,8 @@
       "click_to_add": "Haz clic en el icono de un widget en la barra inferior para añadirlo",
       "done": "Listo",
       "widget_singular": "widget",
-      "widgets_plural": "widgets"
+      "widgets_plural": "widgets",
+      "widgets_short": "w"
     },
     "types": {
       "clock": "Reloj",
@@ -1015,7 +1031,9 @@
       "weather": "Clima",
       "image": "Imagen",
       "visualizer": "Visualizador",
-      "user": "Usuario"
+      "user": "Usuario",
+      "usage": "Uso",
+      "battery": "Batería"
     },
     "variants": {
       "digital": "Digital",
@@ -1029,6 +1047,20 @@
       "bars": "Barras",
       "continuous": "Continuo",
       "default": "Predeterminado"
+    },
+    "presets": {
+      "minimal": {
+        "name": "Minimalista",
+        "desc": "Diseño limpio y sutil con reloj digital minimalista y clima compacto."
+      },
+      "media_station": {
+        "name": "Estación Multimedia",
+        "desc": "Configuración multimedia con barras de visualizador centradas y controlador de música circular."
+      },
+      "dashboard": {
+        "name": "Panel de Control",
+        "desc": "Monitor de espacio de trabajo completo con reloj digital, uso de hardware y estado de la batería."
+      }
     }
   },
   "cli": {

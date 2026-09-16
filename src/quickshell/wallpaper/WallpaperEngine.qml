@@ -54,6 +54,7 @@ ShellRoot {
                 property string transitionType: "fade"
                 property real transitionProgress: 1.0
                 property bool isPreloading: false
+                property bool isInitialLoad: true
 
                 Component.onCompleted: restorePoller.running = true
 
@@ -133,7 +134,7 @@ ShellRoot {
                                 if (savedName !== "") {
                                     let histFile = barWindow.wpCacheDir + "/history.txt";
                                     Quickshell.execDetached(["bash", "-c",
-                                        "HIST='" + histFile + "'; if [ -f \"$HIST\" ]; then if [ \"$(head -n 1 \"$HIST\" 2>/dev/null)\" != '" + savedName + "' ]; then grep -v -F -x '" + savedName + "' \"$HIST\" > \"$HIST.tmp\" 2>/dev/null || true; printf '%s\n' '" + savedName + "' | cat - \"$HIST.tmp\" > \"$HIST\" 2>/dev/null; rm -f \"$HIST.tmp\"; fi; else printf '%s\n' '" + savedName + "' > \"$HIST\"; fi"
+                                        "HIST='" + histFile + "'; if [ -f \"$HIST\" ]; then if [ \"$(head -n 1 \"$HIST\" 2>/dev/null)\" != '" + savedName + "' ]; then grep -v -F -x '" + savedName + "' \"$HIST\" > \"$HIST.tmp\" 2>/dev/null || true; printf '%s\n' '" + savedName + "' | cat - \"$HIST.tmp\" > \"$HIST\"; rm -f \"$HIST.tmp\"; fi; else printf '%s\n' '" + savedName + "' > \"$HIST\"; fi"
                                     ]);
                                 }
                             }
@@ -228,11 +229,8 @@ ShellRoot {
 
                 function layerOpacity(isIncoming, progress) {
                     if (barWindow.isPreloading && isIncoming) return 0.0;
-                    if (transitionType === "expressive") return 1.0;
-                    if (transitionType === "fade") return isIncoming ? progress : 1.0 - progress;
-                    if (transitionType === "zoom-in" || transitionType === "zoom-out")
-                        return isIncoming ? Math.min(1.0, progress * 1.55) : 1.0 - progress * 0.62;
-                    return isIncoming ? Math.min(1.0, progress * 2.0) : 1.0 - progress * 0.28;
+                    if (transitionType !== "fade") return 1.0;
+                    return isIncoming ? progress : 1.0 - progress;
                 }
 
                 function _loadNew(path, force) {
@@ -246,6 +244,25 @@ ShellRoot {
                     let filename = cleanPath.substring(slash + 1);
                     if (!filename.startsWith("wallpaper.")) {
                         barWindow.originalFileName = filename;
+                    }
+
+                    if (barWindow.isInitialLoad) {
+                        barWindow.isInitialLoad = false;
+                        barWindow.transitionProgress = 1.0;
+                        barWindow.isPreloading = false;
+                        if (barWindow.activeLayer === 1) {
+                            barWindow.pathA = cleanPath;
+                            barWindow.isVideoA = vid;
+                            barWindow.activeLayer = 0;
+                            if (vid) barWindow.playA();
+                        } else {
+                            barWindow.pathB = cleanPath;
+                            barWindow.isVideoB = vid;
+                            barWindow.activeLayer = 1;
+                            if (vid) barWindow.playB();
+                        }
+                        barWindow.currentWallpaperPath = cleanPath;
+                        return;
                     }
 
                     transitionAnim.stop();
@@ -280,6 +297,7 @@ ShellRoot {
 
                 function changeWallpaper(path, ttype) {
                     if (!path) return;
+                    barWindow.isInitialLoad = false;
                     let cleanPath = String(path).trim();
                     let slash = cleanPath.lastIndexOf("/");
                     let origName = cleanPath.substring(slash + 1);

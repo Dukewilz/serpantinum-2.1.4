@@ -97,7 +97,9 @@
       "empty_graphic": {
         "title": "Hoạt ảnh trung tâm trống",
         "desc": "Hiển thị hình chú mèo đang ngủ trong trung tâm thông báo khi không có thông báo"
-      }
+      },
+      "test": "Thử nghiệm thông báo",
+      "test_desc": "Đây là thông báo thử nghiệm"
     },
     "idle": {
       "enabled": {
@@ -257,7 +259,16 @@
         "hide_bar": {
           "title": "Ẩn thanh trong trình chỉnh sửa",
           "desc": "Tự động ẩn thanh khi chỉnh sửa tiện ích con ở chế độ biên tập"
-        }
+        },
+        "hide_presets": "Ẩn mẫu có sẵn",
+        "choose_preset": "Chọn mẫu có sẵn",
+        "presets": {
+          "title": "Mẫu tiện ích"
+        },
+        "save_preset": {
+          "title": "Lưu preset"
+        },
+        "preset_name_placeholder": "Nhập tên preset..."
       }
     },
     "bar": {
@@ -590,6 +601,10 @@
       "exclusive": {
         "title": "Chế độ độc quyền",
         "desc": "Ngăn cửa sổ chiếm không gian của dock"
+      },
+      "on_top": {
+        "title": "Đặt dock lên trên các cửa sổ",
+        "desc": "Giữ dock hiển thị phía trên các cửa sổ ứng dụng"
       }
     }
   },
@@ -963,7 +978,8 @@
       "click_to_add": "Nhấp vào biểu tượng tiện ích ở thanh công cụ phía dưới để thêm",
       "done": "Hoàn tất",
       "widget_singular": "tiện ích",
-      "widgets_plural": "tiện ích"
+      "widgets_plural": "tiện ích",
+      "widgets_short": "tiện ích"
     },
     "types": {
       "clock": "Đồng hồ",
@@ -971,7 +987,9 @@
       "weather": "Thời tiết",
       "image": "Hình ảnh",
       "visualizer": "Trình trực quan hóa",
-      "user": "Người dùng"
+      "user": "Người dùng",
+      "usage": "Mức sử dụng",
+      "battery": "Pin"
     },
     "variants": {
       "digital": "Điện tử",
@@ -985,6 +1003,20 @@
       "bars": "Thanh",
       "continuous": "Liên tục",
       "default": "Mặc định"
+    },
+    "presets": {
+      "minimal": {
+        "name": "Tối giản",
+        "desc": "Bố cục tinh tế và tối giản với đồng hồ số gọn gàng cùng thông tin thời tiết."
+      },
+      "media_station": {
+        "name": "Trạm Đa Phương Tiện",
+        "desc": "Thiết lập đa phương tiện với thanh sóng âm trung tâm và trình điều khiển nhạc hình tròn."
+      },
+      "dashboard": {
+        "name": "Bảng Điều Khiển",
+        "desc": "Bảng theo dõi toàn diện với đồng hồ số, mức sử dụng phần cứng và trạng thái pin."
+      }
     }
   },
   "cli": {

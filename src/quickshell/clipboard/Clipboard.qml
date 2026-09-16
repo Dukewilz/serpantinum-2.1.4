@@ -203,51 +203,13 @@ PanelWindow {
         return i === sub.length;
     }
 
-    function getClipKey(item) {
-        return (item && item.id !== undefined && item.id !== null) ? item.id.toString() : "";
-    }
-
     function syncClipBoxModel(targetItems) {
-        let newKeys = {};
-        for (let i = 0; i < targetItems.length; i++) {
-            newKeys[getClipKey(targetItems[i])] = true;
-        }
-
-        for (let i = clipBoxModel.count - 1; i >= 0; i--) {
-            let key = getClipKey(clipBoxModel.get(i));
-            if (!newKeys[key]) {
-                clipBoxModel.remove(i);
-            }
-        }
-
         for (let i = 0; i < targetItems.length; i++) {
             let item = targetItems[i];
-            let targetKey = getClipKey(item);
-
             if (i < clipBoxModel.count) {
-                let currentKey = getClipKey(clipBoxModel.get(i));
-                if (currentKey === targetKey) {
-                    let cur = clipBoxModel.get(i);
-                    if (cur.pinned !== item.pinned || cur.content !== item.content || cur.type !== item.type || cur.sectionCategory !== item.sectionCategory) {
-                        clipBoxModel.set(i, item);
-                    }
-                } else {
-                    let foundIndex = -1;
-                    for (let j = i + 1; j < clipBoxModel.count; j++) {
-                        if (getClipKey(clipBoxModel.get(j)) === targetKey) {
-                            foundIndex = j;
-                            break;
-                        }
-                    }
-                    if (foundIndex !== -1) {
-                        clipBoxModel.move(foundIndex, i, 1);
-                        let cur = clipBoxModel.get(i);
-                        if (cur.pinned !== item.pinned || cur.content !== item.content || cur.type !== item.type || cur.sectionCategory !== item.sectionCategory) {
-                            clipBoxModel.set(i, item);
-                        }
-                    } else {
-                        clipBoxModel.insert(i, item);
-                    }
+                let cur = clipBoxModel.get(i);
+                if (cur.id !== item.id || cur.pinned !== item.pinned || cur.content !== item.content || cur.type !== item.type || cur.sectionCategory !== item.sectionCategory || cur.score !== item.score) {
+                    clipBoxModel.set(i, item);
                 }
             } else {
                 clipBoxModel.append(item);
@@ -324,6 +286,8 @@ PanelWindow {
         }
 
         syncClipBoxModel(filtered);
+
+        clipList.resetScroll();
 
         if (clipBoxModel.count > 0) {
             clipList.currentIndex = 0;
@@ -452,6 +416,7 @@ PanelWindow {
     function clearAllClips() {
         clipboardWindow.allFetchedClips = [];
         clipBoxModel.clear();
+        clipList.resetScroll();
         clipActionProc.command = ["python3", Caching.qsDir + "/clipboard/clip_fetcher.py", "wipe", Caching.getCacheDir("clipboard")];
         clipActionProc.running = true;
     }
@@ -592,6 +557,7 @@ PanelWindow {
             focusRetryTimer.restart();
             focusFinalTimer.restart();
         } else {
+            clipList.resetScroll();
             clipboardWindow.expandedClipId = "";
             filterDebounceTimer.stop();
             focusTimer.stop();
@@ -1041,6 +1007,14 @@ PanelWindow {
                     height: Math.max(0, parent.height - searchRow.height - clipboardWindow.s(10))
                     clip: true
 
+                    NumberAnimation {
+                        id: scrollAnim
+                        target: clipList
+                        property: "contentY"
+                        duration: 260
+                        easing.type: Easing.OutCubic
+                    }
+
                     ListView {
                         id: clipList
                         anchors.fill: parent
@@ -1049,13 +1023,104 @@ PanelWindow {
                         spacing: clipboardWindow.s(4)
                         currentIndex: 0
                         boundsBehavior: Flickable.StopAtBounds
+                        cacheBuffer: clipboardWindow.s(600)
                         interactive: !clipboardWindow.isClearingClips && (contentHeight > height)
 
                         highlightFollowsCurrentItem: false
 
+                        function resetScroll() {
+                            scrollAnim.stop();
+                            positionViewAtBeginning();
+                            contentY = 0;
+                        }
+
+                        function getItemBounds(idx) {
+                            if (idx < 0 || idx >= clipBoxModel.count) return null;
+                            let secH = clipboardWindow.s(22);
+                            let defaultH = clipboardWindow.s(52);
+                            let itemObj = itemAtIndex(idx);
+                            let isFirstInSection = false;
+                            let curItem = clipBoxModel.get(idx);
+                            if (curItem) {
+                                if (idx === 0) {
+                                    isFirstInSection = (curItem.sectionCategory !== undefined && curItem.sectionCategory !== "");
+                                } else {
+                                    let prevItem = clipBoxModel.get(idx - 1);
+                                    if (prevItem && curItem.sectionCategory !== prevItem.sectionCategory) {
+                                        isFirstInSection = true;
+                                    }
+                                }
+                            }
+
+                            if (itemObj) {
+                                let topY = Math.max(0, itemObj.y - (isFirstInSection ? secH : 0));
+                                let botY = itemObj.y + itemObj.height;
+                                return { top: topY, bottom: botY };
+                            }
+
+                            let curY = 0;
+                            let prevSec = "";
+                            for (let i = 0; i <= idx; i++) {
+                                let m = clipBoxModel.get(i);
+                                if (!m) break;
+                                let sec = m.sectionCategory || "";
+                                let hasSec = (sec !== "" && sec !== prevSec);
+                                if (hasSec) {
+                                    curY += secH;
+                                    prevSec = sec;
+                                }
+                                let h = defaultH;
+                                let obj = itemAtIndex(i);
+                                if (obj) {
+                                    h = obj.height;
+                                }
+                                if (i === idx) {
+                                    let topY = Math.max(0, curY - (hasSec ? secH : 0));
+                                    let botY = curY + h;
+                                    return { top: topY, bottom: botY };
+                                }
+                                curY += h + spacing;
+                            }
+                            return { top: Math.max(0, curY), bottom: curY + defaultH };
+                        }
+
+                        function ensureVisible(idx, animated) {
+                            if (idx < 0 || clipBoxModel.count === 0) return;
+                            let bounds = getItemBounds(idx);
+                            if (!bounds) return;
+
+                            let curContentY = scrollAnim.running ? scrollAnim.to : contentY;
+                            let maxScroll = Math.max(0, Math.max(contentHeight, bounds.bottom) - height);
+                            let newContentY = curContentY;
+
+                            if (bounds.top < curContentY) {
+                                newContentY = bounds.top;
+                            } else if (bounds.bottom > curContentY + height) {
+                                newContentY = bounds.bottom - height;
+                            }
+
+                            newContentY = Math.max(0, Math.min(maxScroll, newContentY));
+
+                            if (Math.abs(newContentY - contentY) > 0.5) {
+                                if (animated) {
+                                    scrollAnim.stop();
+                                    scrollAnim.from = contentY;
+                                    scrollAnim.to = newContentY;
+                                    scrollAnim.start();
+                                } else {
+                                    scrollAnim.stop();
+                                    contentY = newContentY;
+                                }
+                            }
+                        }
+
+                        onMovementStarted: {
+                            scrollAnim.stop();
+                        }
+
                         onCurrentIndexChanged: {
                             if (currentIndex >= 0) {
-                                positionViewAtIndex(currentIndex, ListView.Contain);
+                                ensureVisible(currentIndex, clipboardWindow.isKeyboardNav);
                             }
                         }
 
@@ -1109,31 +1174,12 @@ PanelWindow {
                             }
                         }
 
-                        displaced: Transition {
-                            NumberAnimation {
-                                properties: "y"
-                                duration: 280
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-
-                        move: Transition {
-                            NumberAnimation {
-                                properties: "y"
-                                duration: 280
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-
-                        moveDisplaced: Transition {
-                            NumberAnimation {
-                                properties: "y"
-                                duration: 280
-                                easing.type: Easing.OutCubic
-                            }
-                        }
+                        displaced: null
 
                         onContentYChanged: {
+                            if (contentY < 0 && !moving && !flicking) {
+                                contentY = 0;
+                            }
                             if (clipboardWindow.hasMoreClips && !clipFetcherProc.running && searchInput.text.trim().length === 0) {
                                 if (contentY + height >= contentHeight - clipboardWindow.s(450)) {
                                     clipboardWindow.fetchNextClipPage();
@@ -1168,13 +1214,19 @@ PanelWindow {
                                     easing.type: Easing.OutQuart
                                     onRunningChanged: {
                                         if (!running && clipDelegateWrapper.isSelected) {
-                                            clipList.positionViewAtIndex(clipList.currentIndex, ListView.Contain);
+                                            clipList.ensureVisible(clipList.currentIndex, true);
                                         }
                                     }
                                 }
                             }
 
                             property string clipIdString: (typeof model !== "undefined" && model && model.id !== undefined) ? model.id.toString() : (clipBoxModel.get(index) ? clipBoxModel.get(index).id.toString() : "")
+                            
+                            onClipIdStringChanged: {
+                                itemExpanded = false;
+                                dragX = 0;
+                            }
+
                             property real dragX: 0
                             property bool isDismissing: false
 
@@ -1205,6 +1257,7 @@ PanelWindow {
                                 font.family: ThemeBackend.fontFamily
                                 font.pixelSize: clipboardWindow.s(12)
                                 wrapMode: Text.Wrap
+                                textFormat: Text.PlainText
                             }
 
                             function toggleExpand() {
@@ -1222,7 +1275,7 @@ PanelWindow {
                                     if (model.type !== "image" && clipboardWindow.expandedClipId !== clipIdString) {
                                         clipboardWindow.fetchFullText(clipIdString);
                                     }
-                                    clipList.positionViewAtIndex(index, ListView.Contain);
+                                    clipList.ensureVisible(index, true);
                                 }
                             }
 
@@ -1538,6 +1591,7 @@ PanelWindow {
                                         elide: Text.ElideRight
                                         maximumLineCount: 2
                                         wrapMode: Text.Wrap
+                                        textFormat: Text.PlainText
                                         verticalAlignment: Text.AlignVCenter
                                     }
                                 }

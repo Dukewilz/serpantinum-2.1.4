@@ -33,7 +33,10 @@ Item {
             cache: true
             smooth: true
             visible: acrylicSurface.blurStrength > 0.01 && status === Image.Ready
-            opacity: Math.min(0.72, acrylicSurface.blurStrength * (1.0 - acrylicSurface.surfaceOpacity * 0.48))
+            // Surface opacity must attenuate every painted layer. The previous
+            // inverse formula made the wallpaper layer more opaque while the
+            // slider was lowered, visually cancelling the transparent tint.
+            opacity: Math.min(0.72, acrylicSurface.blurStrength) * acrylicSurface.surfaceOpacity
             layer.enabled: visible
             layer.effect: MultiEffect {
                 blurEnabled: true

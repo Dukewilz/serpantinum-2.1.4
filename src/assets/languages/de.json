@@ -98,7 +98,9 @@
       "empty_graphic": {
         "title": "Animation für leere benachrichtigungen",
         "desc": "Zeigt die schlafende katze im benachrichtigungszentrum an, wenn keine vorhanden sind"
-      }
+      },
+      "test": "Benachrichtigung testen",
+      "test_desc": "Dies ist eine Testbenachrichtigung"
     },
     "idle": {
       "enabled": {
@@ -258,7 +260,16 @@
         "hide_bar": {
           "title": "Leiste im Redaktor ausblenden",
           "desc": "Die Leiste beim Bearbeiten von Widgets im Redaktormodus automatisch ausblenden"
-        }
+        },
+        "hide_presets": "Vorlagen verbergen",
+        "choose_preset": "Vorlage wählen",
+        "presets": {
+          "title": "Widget-Vorlagen"
+        },
+        "save_preset": {
+          "title": "Voreinstellung speichern"
+        },
+        "preset_name_placeholder": "Namen der Voreinstellung eingeben..."
       }
     },
     "bar": {
@@ -634,6 +645,10 @@
       "exclusive": {
         "title": "Exklusiver Modus",
         "desc": "Fenster daran hindern, den Platz des Docks einzunehmen"
+      },
+      "on_top": {
+        "title": "Dock über Fenstern platzieren",
+        "desc": "Das Dock über Anwendungsfenstern sichtbar halten"
       }
     }
   },
@@ -1007,7 +1022,8 @@
       "click_to_add": "Auf ein widget-symbol in der unteren leiste klicken, um es hinzuzufügen",
       "done": "Fertig",
       "widget_singular": "Widget",
-      "widgets_plural": "Widgets"
+      "widgets_plural": "Widgets",
+      "widgets_short": "W"
     },
     "types": {
       "clock": "Uhr",
@@ -1015,7 +1031,9 @@
       "weather": "Wetter",
       "image": "Bild",
       "visualizer": "Visualisierer",
-      "user": "Benutzer"
+      "user": "Benutzer",
+      "usage": "Auslastung",
+      "battery": "Akku"
     },
     "variants": {
       "digital": "Digital",
@@ -1029,6 +1047,20 @@
       "bars": "Balken",
       "continuous": "Kontinuierlich",
       "default": "Standard"
+    },
+    "presets": {
+      "minimal": {
+        "name": "Minimal",
+        "desc": "Klares und dezentes Layout mit minimaler Digitaluhr und kompaktem Wetter."
+      },
+      "media_station": {
+        "name": "Medienstation",
+        "desc": "Dediziertes Medien-Setup mit zentriertem Audio-Visualisierer und rundem Musik-Player."
+      },
+      "dashboard": {
+        "name": "Dashboard",
+        "desc": "Umfassender Systemmonitor mit Digitaluhr, Hardware-Auslastung und Akkustand."
+      }
     }
   },
   "cli": {

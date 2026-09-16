@@ -66,11 +66,12 @@ Rectangle {
             height: leftLayout.pillHeight
             width: leftLayout.pillHeight
             visible: true
-            iconOffsetX: -2
+            iconOffsetX: 0
+            iconOffsetY: 0
 
-            cornerRadius: Math.max(0, ThemeBackend.borderRadius - (barWindow ? barWindow.s(2) : 2))
+            cornerRadius: Math.round(leftLayout.pillHeight / 2)
             buttonIcon: "󰒓"
-            iconFontSize: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 16 : 18) : (leftWidgetRoot.isCompact ? 16 : 18)
+            iconFontSize: barWindow ? barWindow.s(leftWidgetRoot.isCompact ? 20 : 22) : (leftWidgetRoot.isCompact ? 20 : 22)
             accentColor: leftWidgetRoot.isCompact ? Qt.lighter(ThemeBackend.surface0, 1.18) : ThemeBackend.surface0
             textColor: isHoveredOrHighlighted ? ThemeBackend.text : (leftWidgetRoot.isCompact ? ThemeBackend.subtext0 : ThemeBackend.overlay2)
 

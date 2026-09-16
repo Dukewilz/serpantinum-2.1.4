@@ -97,7 +97,9 @@
       "empty_graphic": {
         "title": "빈 알림 센터 애니메이션",
         "desc": "알림 센터가 비어 있을 때 잠자는 고양이 그래픽을 표시합니다"
-      }
+      },
+      "test": "알림 테스트",
+      "test_desc": "이것은 테스트 알림입니다"
     },
     "idle": {
       "enabled": {
@@ -257,7 +259,16 @@
         "hide_bar": {
           "title": "편집기에서 바 숨기기",
           "desc": "편집기 모드에서 위젯을 수정할 때 자동으로 바를 숨깁니다"
-        }
+        },
+        "hide_presets": "프리셋 숨기기",
+        "choose_preset": "프리셋 선택",
+        "presets": {
+          "title": "위젯 프리셋"
+        },
+        "save_preset": {
+          "title": "프리셋 저장"
+        },
+        "preset_name_placeholder": "프리셋 이름 입력..."
       }
     },
     "bar": {
@@ -590,6 +601,10 @@
       "exclusive": {
         "title": "단독 모드",
         "desc": "창이 독 공간을 차지하지 않도록 방지"
+      },
+      "on_top": {
+        "title": "창 위에 독 배치",
+        "desc": "애플리케이션 창 위에 독이 항상 보이도록 유지"
       }
     }
   },
@@ -963,7 +978,8 @@
       "click_to_add": "아래 도구 모음에서 위젯 아이콘을 클릭해 추가하세요",
       "done": "완료",
       "widget_singular": "개 위젯",
-      "widgets_plural": "개 위젯"
+      "widgets_plural": "개 위젯",
+      "widgets_short": "개"
     },
     "types": {
       "clock": "시계",
@@ -971,7 +987,9 @@
       "weather": "날씨",
       "image": "이미지",
       "visualizer": "시각화 도구",
-      "user": "사용자"
+      "user": "사용자",
+      "usage": "사용량",
+      "battery": "배터리"
     },
     "variants": {
       "digital": "디지털",
@@ -985,6 +1003,20 @@
       "bars": "막대",
       "continuous": "연속형",
       "default": "기본"
+    },
+    "presets": {
+      "minimal": {
+        "name": "미니멀",
+        "desc": "미니멀한 디지털 시계와 컴팩트한 날씨가 포함된 깔끔한 레이아웃입니다."
+      },
+      "media_station": {
+        "name": "미디어 스테이션",
+        "desc": "중앙 오디오 비주얼라이저 바와 원형 음악 컨트롤러가 포함된 미디어 설정입니다."
+      },
+      "dashboard": {
+        "name": "대시보드",
+        "desc": "디지털 시계, 하드웨어 리소스 사용량 및 배터리 상태를 보여주는 대시보드입니다."
+      }
     }
   },
   "cli": {

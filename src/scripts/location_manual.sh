@@ -10,7 +10,7 @@ if [[ -z "$lat" || -z "$lon" ]]; then
 fi
 
 now=$(date +%s)
-bdc="$(curl -s --max-time 10 "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en")"
+bdc="$(curl -sL --max-time 10 "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en")"
 
 city="$(echo "$bdc" | jq -r '.city // .locality // .principalSubdivision // "Unknown"')"
 country="$(echo "$bdc" | jq -r '.countryName // "Unknown"')"
